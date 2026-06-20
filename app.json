@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Comida Divertida",
+    "slug": "comida-divertida",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#4CAF50"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.utp.comidadivertida",
+      "adaptiveIcon": {
+        "backgroundColor": "#4CAF50"
+      }
+    }
+  }
+}
