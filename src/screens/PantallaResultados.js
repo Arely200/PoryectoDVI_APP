@@ -1,12 +1,8 @@
 // src/screens/PantallaResultados.js
 import React, { useRef, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  Dimensions,
+  View, Text, StyleSheet, TouchableOpacity,
+  Animated, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Confeti from '../components/Confeti';
@@ -14,9 +10,15 @@ import Confeti from '../components/Confeti';
 const { width } = Dimensions.get('window');
 
 export default function PantallaResultados({ route, navigation }) {
-  const { nivelId, aciertos, total } = route.params || { nivelId: 1, aciertos: 0, total: 15 };
+  const params        = route.params || {};
+  const nivelIdFinal  = params.nivelId  ?? 1;
+  const aciertosFinal = params.aciertos ?? 0;
+  const totalFinal    = params.total    ?? 15;
+  const fallidosFinal = params.fallidos ?? (totalFinal - aciertosFinal);
+  const perdido       = params.perdido  ?? false;
 
-  const gano = aciertos >= Math.ceil(total / 2);
+  const gano = !perdido && aciertosFinal >= Math.ceil(totalFinal / 2);
+
   const animModal = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -27,89 +29,129 @@ export default function PantallaResultados({ route, navigation }) {
     }).start();
   }, []);
 
-  const irSiguienteNivel = () => {
-    const siguienteId = nivelId + 1;
-    const niveles = {
-      1: 'JuegoCanastas',
-      2: 'JuegoPlatoSaludable',
-      3: 'JuegoSeleccionar',
-      4: 'JuegoSnacks',
-    };
-    const pantalla = niveles[siguienteId] || 'Secciones';
-    navigation.replace(pantalla, { nivelId: siguienteId });
+  const NIVELES = {
+    1: 'JuegoCanastas',
+    2: 'JuegoPlatoSaludable',
+    3: 'JuegoSeleccionar',
+    4: 'JuegoSnacks',
   };
 
-  const volverInicio = () => {
-    navigation.navigate('Secciones');
+  const irSiguienteNivel = () => {
+    const sig = nivelIdFinal + 1;
+    navigation.replace(NIVELES[sig] || 'Secciones', { nivelId: sig });
   };
+
+  const volverInicio = () => navigation.navigate('Secciones');
+
+  const reintentar = () =>
+    navigation.replace(NIVELES[nivelIdFinal] || 'Secciones', { nivelId: nivelIdFinal });
+
+  const colores = gano
+    ? ['#1B5E20', '#2E7D32', '#43A047']
+    : perdido
+    ? ['#B71C1C', '#C62828', '#E53935']
+    : ['#F57C00', '#E65100', '#FF8F00'];
+
+  // Estrellas: máximo 5, proporcional a aciertos
+  const estrellasLlenas = Math.round((aciertosFinal / totalFinal) * 5);
 
   return (
-    <View style={styles.container}>
-      {/* CONFETI */}
+    <View style={st.container}>
       {gano && <Confeti cantidad={50} duracion={4000} />}
 
-      {/* OVERLAY RESULTADO */}
-      <View style={styles.overlay}>
+      <View style={st.overlay}>
         <Animated.View
           style={[
-            styles.tarjeta,
+            st.tarjeta,
             {
-              transform: [
-                {
-                  scale: animModal.interpolate({
-                    inputRange: [0, 0.6, 1],
-                    outputRange: [0.3, 1.08, 1],
-                  }),
-                },
-              ],
               opacity: animModal,
+              transform: [{
+                scale: animModal.interpolate({
+                  inputRange: [0, 0.6, 1],
+                  outputRange: [0.3, 1.08, 1],
+                }),
+              }],
             },
           ]}
         >
-          <LinearGradient
-            colors={gano ? ['#1B5E20', '#2E7D32', '#43A047'] : ['#B71C1C', '#C62828', '#E53935']}
-            style={styles.gradModal}
-          >
-            <Text style={styles.emojiModal}>{gano ? '🏆' : '💪'}</Text>
-            <Text style={styles.tituloModal}>{gano ? '¡FELICIDADES!' : '¡BUEN INTENTO!'}</Text>
-            <Text style={styles.subModal}>
-              Clasificaste {aciertos} de {total} alimentos correctamente
+          <LinearGradient colors={colores} style={st.gradModal}>
+
+            {/* EMOJI GRANDE */}
+            <Text style={st.emoji}>
+              {gano ? '🏆' : perdido ? '😢' : '💪'}
             </Text>
 
-            {/* Fila de estrellas ganadas */}
-            <View style={styles.filaEstrellas}>
-              {Array.from({ length: total }).map((_, i) => (
-                <Text key={i} style={styles.estrella}>
-                  {i < aciertos ? '⭐' : '☆'}
+            {/* TÍTULO */}
+            <Text style={st.titulo}>
+              {gano ? '¡FELICIDADES!' : perdido ? '¡PERDISTE!' : '¡BUEN INTENTO!'}
+            </Text>
+
+            {/* SUBTÍTULO */}
+            <Text style={st.sub}>
+              Clasificaste {aciertosFinal} de {totalFinal} alimentos correctamente
+            </Text>
+
+            {/* ESTRELLAS — fijas en 5 */}
+            <View style={st.filaEstrellas}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Text key={i} style={st.estrella}>
+                  {i < estrellasLlenas ? '⭐' : '☆'}
                 </Text>
               ))}
             </View>
 
-            <View style={styles.estadisticas}>
-              <View style={styles.stat}>
-                <Text style={styles.statNum}>{aciertos}</Text>
-                <Text style={styles.statLbl}>✅ Aciertos</Text>
+            {/* ESTADÍSTICAS — aciertos y fallos con colores distintos */}
+            <View style={st.stats}>
+              <View style={st.stat}>
+                <Text style={[st.statNum, { color: '#A5D6A7' }]}>
+                  {aciertosFinal}
+                </Text>
+                <Text style={st.statLbl}>✅ Aciertos</Text>
               </View>
-              <View style={styles.divider} />
-              <View style={styles.stat}>
-                <Text style={styles.statNum}>{total - aciertos}</Text>
-                <Text style={styles.statLbl}>❌ Fallados</Text>
+
+              <View style={st.divider} />
+
+              <View style={st.stat}>
+                <Text style={[st.statNum, { color: '#FFCDD2' }]}>
+                  {fallidosFinal}
+                </Text>
+                <Text style={st.statLbl}>❌ Fallados</Text>
               </View>
             </View>
 
-            {/* Botón Siguiente Nivel */}
-            <TouchableOpacity style={styles.btnPrincipal} onPress={irSiguienteNivel} activeOpacity={0.85}>
-              <LinearGradient colors={['#FFD93D', '#F57C00']} style={styles.gradBtn}>
-                <Text style={styles.txtBtnPrincipal}>
-                  {gano ? '🚀 Siguiente Nivel' : '🔄 Intentar de nuevo'}
+            {/* MENSAJE EXTRA */}
+            <View style={st.mensajeBox}>
+              <Text style={st.mensajeTxt}>
+                {gano
+                  ? '¡Muy bien! Sabes distinguir los alimentos saludables 🥦🍎'
+                  : perdido
+                  ? 'No te rindas, ¡inténtalo de nuevo! 💪'
+                  : '¡Casi lo logras! Practica un poco más 🌟'}
+              </Text>
+            </View>
+
+            {/* BOTÓN PRINCIPAL */}
+            <TouchableOpacity
+              style={st.btnPrincipal}
+              onPress={perdido ? reintentar : gano ? irSiguienteNivel : reintentar}
+              activeOpacity={0.85}
+            >
+              <LinearGradient colors={['#FFD93D', '#F57C00']} style={st.gradBtn}>
+                <Text style={st.txtBtn}>
+                  {perdido
+                    ? '🔄 Intentar de nuevo'
+                    : gano
+                    ? '🚀 Siguiente Nivel'
+                    : '🔄 Intentar de nuevo'}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Botón Volver al Inicio */}
-            <TouchableOpacity style={styles.btnSecundario} onPress={volverInicio} activeOpacity={0.85}>
-              <Text style={styles.txtBtnSecundario}>🏠 Volver al Inicio</Text>
+            {/* BOTÓN SECUNDARIO */}
+            <TouchableOpacity style={st.btnSec} onPress={volverInicio} activeOpacity={0.85}>
+              <Text style={st.txtBtnSec}>🏠 Volver al Inicio</Text>
             </TouchableOpacity>
+
           </LinearGradient>
         </Animated.View>
       </View>
@@ -117,7 +159,7 @@ export default function PantallaResultados({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const st = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.62)',
@@ -145,85 +187,115 @@ const styles = StyleSheet.create({
   gradModal: {
     padding: 28,
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
-  emojiModal: {
-    fontSize: 68,
+
+  emoji: {
+    fontSize: 72,
   },
-  tituloModal: {
-    fontSize: 28,
+
+  titulo: {
+    fontSize: 30,
     fontWeight: '900',
     color: '#fff',
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+    letterSpacing: 1,
   },
-  subModal: {
+
+  sub: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.88)',
     textAlign: 'center',
+    lineHeight: 20,
   },
+
   filaEstrellas: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 2,
+    gap: 8,
   },
   estrella: {
-    fontSize: 14,
+    fontSize: 32,
   },
-  estadisticas: {
+
+  stats: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderRadius: 20,
+    paddingVertical: 18,
     width: '100%',
     justifyContent: 'space-around',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   stat: {
     alignItems: 'center',
     flex: 1,
+    gap: 4,
   },
   statNum: {
-    fontSize: 26,
+    fontSize: 42,        // bien grande para que el niño lo vea
     fontWeight: '900',
-    color: '#fff',
+    lineHeight: 46,
   },
   statLbl: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '600',
   },
   divider: {
     width: 1,
     backgroundColor: 'rgba(255,255,255,0.25)',
+    marginVertical: 4,
   },
+
+  mensajeBox: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  mensajeTxt: {
+    fontSize: 14,
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+
   btnPrincipal: {
     width: '100%',
     borderRadius: 20,
     overflow: 'hidden',
-    elevation: 5,
+    elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
   gradBtn: {
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: 'center',
   },
-  txtBtnPrincipal: {
-    fontSize: 17,
+  txtBtn: {
+    fontSize: 18,
     fontWeight: '900',
     color: '#1B5E20',
+    letterSpacing: 0.5,
   },
-  btnSecundario: {
-    paddingVertical: 12,
+
+  btnSec: {
+    paddingVertical: 10,
     alignItems: 'center',
     width: '100%',
   },
-  txtBtnSecundario: {
+  txtBtnSec: {
     fontSize: 14,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.85)',
