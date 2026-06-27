@@ -8,9 +8,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const CLAVES = {
   NOMBRE: "@comida_divertida:nombre",
   ESTRELLAS: "@comida_divertida:estrellas",
-  PROGRESO: "@comida_divertida:progreso", // { 1: {completado, aciertos}, 2:..., 3:... }
+  PROGRESO: "@comida_divertida:progreso",
   PARTIDAS: "@comida_divertida:partidas_jugadas",
   ULTIMA_VEZ: "@comida_divertida:ultima_vez",
+  PRIMERA_VEZ: "@comida_divertida:primera_vez", // ✅ NUEVO
 };
 
 // --- Nombre del niño/a ---
@@ -37,7 +38,6 @@ export async function sumarEstrellas(cantidad) {
 }
 
 // --- Progreso por nivel ---
-// Estructura: { "1": { completado: true, aciertos: 8, total: 8 }, ... }
 export async function leerProgreso() {
   const valor = await AsyncStorage.getItem(CLAVES.PROGRESO);
   return valor ? JSON.parse(valor) : {};
@@ -80,4 +80,14 @@ export async function reiniciarProgreso() {
     CLAVES.PARTIDAS,
     CLAVES.ULTIMA_VEZ,
   ]);
+}
+
+// --- ✅ Primera vez que abre la app ---
+export async function guardarPrimeraVez() {
+  await AsyncStorage.setItem(CLAVES.PRIMERA_VEZ, "true");
+}
+
+export async function leerPrimeraVez() {
+  const valor = await AsyncStorage.getItem(CLAVES.PRIMERA_VEZ);
+  return valor === "true";
 }

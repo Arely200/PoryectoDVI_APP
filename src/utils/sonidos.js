@@ -6,22 +6,24 @@ let sonidoAcierto = null;
 let sonidoFallo = null;
 let sonidoVictoria = null;
 let sonidoFondo = null;
+let sonidosCargados = false;
 
 // ========== MÚSICA DE FONDO ==========
 export async function iniciarMusicaFondo() {
   try {
     if (sonidoFondo) return;
     
+    console.log('🎵 Intentando cargar música de fondo...');
     const { sound } = await Audio.Sound.createAsync(
-      require('../../assets/sonidos/fondo.mp3')
+      require('../assets/sonidos/fondo.mp3')
     );
     sonidoFondo = sound;
     await sonidoFondo.setIsLoopingAsync(true);
-    await sonidoFondo.setVolumeAsync(0.4);
+    await sonidoFondo.setVolumeAsync(0.5);
     await sonidoFondo.playAsync();
-    console.log('🎵 Música de fondo iniciada');
+    console.log('🎵 Música de fondo iniciada OK');
   } catch (error) {
-    console.log('Error en música fondo:', error);
+    console.log('❌ Error en música fondo:', error.message);
   }
 }
 
@@ -50,59 +52,74 @@ export async function detenerMusicaFondo() {
 // ========== SONIDOS DEL JUEGO ==========
 export async function cargarSonidos() {
   try {
+    console.log('🔊 Cargando sonidos...');
+    
     const acierto = await Audio.Sound.createAsync(
-      require('../../assets/sonidos/acierto.mp3')
+      require('../assets/sonidos/acierto.mp3')
     );
+    console.log('✅ Acierto cargado');
+    
     const fallo = await Audio.Sound.createAsync(
-      require('../../assets/sonidos/fallo.mp3')
+      require('../assets/sonidos/fallo.mp3')
     );
+    console.log('✅ Fallo cargado');
+    
     const victoria = await Audio.Sound.createAsync(
-      require('../../assets/sonidos/victoria.mp3')
+      require('../assets/sonidos/victoria.mp3')
     );
+    console.log('✅ Victoria cargada');
+    
     sonidoAcierto = acierto.sound;
     sonidoFallo = fallo.sound;
     sonidoVictoria = victoria.sound;
-    console.log('✅ Sonidos cargados correctamente');
+    sonidosCargados = true;
+    console.log('✅ Todos los sonidos cargados correctamente');
   } catch (error) {
-    console.log('Error cargando sonidos:', error);
+    console.log('❌ Error cargando sonidos:', error.message);
+    sonidosCargados = false;
   }
 }
 
 export async function reproducirAcierto() {
-  // VIBRACIÓN (siempre funciona)
   try {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   } catch (error) {}
   
-  // SONIDO
-  if (sonidoAcierto) {
+  if (sonidosCargados && sonidoAcierto) {
     try {
       await sonidoAcierto.setPositionAsync(0);
       await sonidoAcierto.playAsync();
-    } catch (error) {}
+      console.log('🔊 Acierto reproducido');
+    } catch (error) {
+      console.log('❌ Error reproduciendo acierto:', error.message);
+    }
   }
 }
 
 export async function reproducirFallo() {
-  // VIBRACIÓN
   try {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   } catch (error) {}
   
-  // SONIDO
-  if (sonidoFallo) {
+  if (sonidosCargados && sonidoFallo) {
     try {
       await sonidoFallo.setPositionAsync(0);
       await sonidoFallo.playAsync();
-    } catch (error) {}
+      console.log('🔊 Fallo reproducido');
+    } catch (error) {
+      console.log('❌ Error reproduciendo fallo:', error.message);
+    }
   }
 }
 
 export async function reproducirVictoria() {
-  if (sonidoVictoria) {
+  if (sonidosCargados && sonidoVictoria) {
     try {
       await sonidoVictoria.setPositionAsync(0);
       await sonidoVictoria.playAsync();
-    } catch (error) {}
+      console.log('🔊 Victoria reproducida');
+    } catch (error) {
+      console.log('❌ Error reproduciendo victoria:', error.message);
+    }
   }
 }

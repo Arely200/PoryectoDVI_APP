@@ -8,12 +8,30 @@
     "splash": {
       "backgroundColor": "#4CAF50"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
       "package": "com.utp.comidadivertida",
       "adaptiveIcon": {
         "backgroundColor": "#4CAF50"
       }
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "87b56f76-85d1-441a-a51e-0df29dba8a72"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.utp.comidadivertida",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "plugins": [
+      "expo-audio",
+      "expo-video",
+      "expo-asset"
+    ]
   }
 }
