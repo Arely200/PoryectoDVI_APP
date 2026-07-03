@@ -4,9 +4,9 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-nati
 import { LinearGradient } from "expo-linear-gradient";
 
 const PASOS = [
-  { emoji: "👀", texto: "MIRA la comida", color: "#FF6B6B" },
-  { emoji: "🤔", texto: "PIENSA si es saludable o chatarra", color: "#4ECDC4" },
-  { emoji: "👆", texto: "TOCA el botón correcto", color: "#FFD93D" },
+  { emoji: "👀", texto: "MIRA la comida", color: "#fb3939" },
+  { emoji: "🤔", texto: "PIENSA si es saludable o chatarra", color: "#3052af" },
+  { emoji: "👆", texto: "TOCA el botón correcto", color: "#25a72d" },
 ];
 
 const CONSEJOS = [
@@ -17,8 +17,8 @@ const CONSEJOS = [
 
 export default function PantallaComoJugar({ navigation }) {
   return (
-    <LinearGradient 
-      colors={["#2E7D32", "#4CAF50", "#FFD93D"]}
+    <LinearGradient
+      colors={["#14c8bf", "#107b7d", "#0d142b"]}
       style={styles.contenedor}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -31,7 +31,7 @@ export default function PantallaComoJugar({ navigation }) {
         <View style={styles.circulo4} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -75,7 +75,7 @@ export default function PantallaComoJugar({ navigation }) {
         {/* BURBUJA DEL MONO */}
         <View style={styles.burbujaContainer}>
           <LinearGradient
-            colors={["#FFF9C4", "#FFE082"]}
+            colors={["#88f4ce", "#62ec95"]}
             style={styles.burbuja}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -95,12 +95,11 @@ export default function PantallaComoJugar({ navigation }) {
           activeOpacity={0.85}
         >
           <LinearGradient
-            colors={["#FFD93D", "#FF8A65"]}
+            colors={["#03eb16ef", "#09f5fdf5"]}
             style={styles.botonGradiente}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Text style={styles.botonEmoji}>🎮</Text>
             <Text style={styles.botonTexto}>¡A JUGAR!</Text>
             <Text style={styles.botonFlecha}>→</Text>
           </LinearGradient>
@@ -114,54 +113,54 @@ const styles = StyleSheet.create({
   contenedor: { flex: 1 },
 
   // DECORACIÓN DE FONDO (igual que JuegoPlatoSaludable)
-  fondoDecoracion: { 
-    position: "absolute", 
-    top: 0, 
-    left: 0, 
-    right: 0, 
-    bottom: 0, 
-    overflow: "hidden" 
+  fondoDecoracion: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: "hidden"
   },
-  circulo1: { 
-    position: "absolute", 
-    top: -80, 
-    right: -80, 
-    width: 280, 
-    height: 280, 
-    borderRadius: 140, 
-    backgroundColor: "rgba(255,255,255,0.08)" 
+  circulo1: {
+    position: "absolute",
+    top: -80,
+    right: -80,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(255,255,255,0.08)"
   },
-  circulo2: { 
-    position: "absolute", 
-    bottom: -60, 
-    left: -60, 
-    width: 220, 
-    height: 220, 
-    borderRadius: 110, 
-    backgroundColor: "rgba(255,255,255,0.06)" 
+  circulo2: {
+    position: "absolute",
+    bottom: -60,
+    left: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(255,255,255,0.06)"
   },
-  circulo3: { 
-    position: "absolute", 
-    top: "30%", 
-    right: -40, 
-    width: 140, 
-    height: 140, 
-    borderRadius: 70, 
-    backgroundColor: "rgba(255,255,255,0.05)" 
+  circulo3: {
+    position: "absolute",
+    top: "30%",
+    right: -40,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(255,255,255,0.05)"
   },
-  circulo4: { 
-    position: "absolute", 
-    bottom: "20%", 
-    left: -30, 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    backgroundColor: "rgba(255,215,0,0.08)" 
+  circulo4: {
+    position: "absolute",
+    bottom: "20%",
+    left: -30,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(255,215,0,0.08)"
   },
 
-  scrollContent: { 
-    flexGrow: 1, 
-    alignItems: "center", 
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 30,
@@ -174,9 +173,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: "100%",
   },
-  titulo: { 
-    fontSize: 34, 
-    fontWeight: "900", 
+  titulo: {
+    fontSize: 34,
+    fontWeight: "900",
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.2)",
     textShadowOffset: { width: 1, height: 2 },
@@ -235,13 +234,13 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#fff",
   },
-  pasoEmoji: { 
-    fontSize: 28, 
+  pasoEmoji: {
+    fontSize: 28,
     marginRight: 12,
   },
-  pasoTexto: { 
-    fontSize: 16, 
-    fontWeight: "600", 
+  pasoTexto: {
+    fontSize: 15,
+    fontWeight: "600",
     color: "#333",
     flex: 1,
     flexWrap: "wrap",
@@ -262,13 +261,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
-  consejoEmoji: { 
-    fontSize: 24, 
+  consejoEmoji: {
+    fontSize: 24,
     marginRight: 12,
   },
-  consejoTexto: { 
-    fontSize: 14, 
-    fontWeight: "500", 
+  consejoTexto: {
+    fontSize: 16,
+    fontWeight: "500",
     color: "#444",
     flex: 1,
   },
@@ -283,7 +282,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: "rgba(255,193,7,0.3)",
+    borderColor: "rgba(8, 105, 135, 0.97)",
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -296,20 +295,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   burbujaTextoGrande: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "800",
-    color: "#4E342E",
+    color: "#000000",
   },
   burbujaTextoChico: {
-    fontSize: 12,
-    color: "#795548",
+    fontSize: 14,
+    color: "#000000",
     fontWeight: "500",
     marginTop: 2,
   },
 
   boton: {
     width: "100%",
-    borderRadius: 30,
+    borderRadius: 200,
     overflow: "hidden",
     elevation: 10,
     shadowColor: "#FFD93D",
@@ -328,15 +327,15 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.3)",
   },
   botonEmoji: { fontSize: 24 },
-  botonTexto: { 
-    color: "#fff", 
-    fontWeight: "900", 
+  botonTexto: {
+    color: "#0f4b13",
+    fontWeight: "900",
     fontSize: 22,
     letterSpacing: 1,
   },
   botonFlecha: {
     fontSize: 22,
-    color: "#fff",
-    fontWeight: "700",
+    color: "#105715",
+    fontWeight: "2000",
   },
 });

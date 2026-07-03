@@ -29,7 +29,7 @@ export default function PantallaLogros() {
 
   return (
     <LinearGradient 
-      colors={["#2E7D32", "#4CAF50", "#FFD93D"]}
+      colors={["#14c8bf", "#107b7d", "#0d142b"]}
       style={styles.contenedor}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}

@@ -157,7 +157,7 @@ export default function JuegoSnacks({ route, navigation }) {
 
   return (
     <LinearGradient
-      colors={["#4CAF50", "#FFD93D"]}
+      colors={["#14c8bf", "#107b7d", "#0d142b"]}
       style={styles.contenedor}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -217,7 +217,7 @@ export default function JuegoSnacks({ route, navigation }) {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={["#4CAF50", "#2E7D32"]}
+            colors={["#4CAF50", "#07aa0f"]}
             style={styles.botonGradiente}
           >
             <Text style={styles.botonEmoji}>😊</Text>
@@ -232,7 +232,7 @@ export default function JuegoSnacks({ route, navigation }) {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={["#FF8A65", "#E64A19"]}
+            colors={["#fd5454", "#c10606"]}
             style={styles.botonGradiente}
           >
             <Text style={styles.botonEmoji}>😞</Text>
@@ -297,47 +297,71 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
   },
   barraSuperior: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  botonVolver: { backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14 },
+  botonVolver: { backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 15, paddingVertical: 8, paddingHorizontal: 15 },
   flecha: { fontSize: 24, color: "#fff", fontWeight: "900" },
-  tituloNivel: { fontSize: 16, fontWeight: "800", color: "#fff", flex: 1, textAlign: "center" },
+  tituloNivel: { fontSize: 20, fontWeight: "800", color: "#fff", flex: 1, textAlign: "center" },
   estrellasBadge: { backgroundColor: "rgba(255,215,0,0.3)", borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12 },
   estrellas: { fontSize: 16, fontWeight: "900", color: "#FFD700" },
   
   barraProgresoFondo: { height: 8, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 6, overflow: "hidden", marginBottom: 4 },
-  barraProgresoFill: { height: "100%", backgroundColor: "#FFD700", borderRadius: 6 },
+  barraProgresoFill: { height: "100%", backgroundColor: "#80ff00", borderRadius: 6 },
   
-  contadorContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  contadorContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   contadorTexto: { fontSize: 14, color: "#fff", fontWeight: "700" },
   contadorPreguntas: { fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: "700" },
   
   tarjeta: {
-    backgroundColor: "rgba(255,255,255,0.95)",
-    borderRadius: 32,
+    backgroundColor: "rgba(255, 252, 252, 0.95)",
+    borderRadius: 40,
     alignItems: "center",
-    paddingVertical: 30,
-    marginBottom: 16,
+    paddingVertical: 50,
+    marginBottom: 45,
     elevation: 12,
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
   },
-  nombreComida: { fontSize: 26, fontWeight: "900", color: "#2E7D32", marginTop: 12 },
+  nombreComida: { fontSize: 28, fontWeight: "900", color: "#023f5e", marginTop: 15 },
   cajaPregunta: { backgroundColor: "rgba(255,255,255,0.9)", borderRadius: 16, paddingVertical: 14, alignItems: "center", marginBottom: 16 },
-  textoPregunta: { fontSize: 20, fontWeight: "900", color: "#2E7D32" },
+  textoPregunta: { fontSize: 20, fontWeight: "900", color: "#023f5e" },
   filaBotones: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
   boton: { flex: 1, borderRadius: 20, overflow: "hidden", elevation: 8 },
   botonGradiente: { paddingVertical: 18, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 10 },
-  botonSaludable: { shadowColor: "#4CAF50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
-  botonChatarra: { shadowColor: "#FF8A65", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
+  botonSaludable: { shadowColor: "#052b06", shadowOffset: { width: 0, height:4 }, shadowOpacity: 0.4, shadowRadius: 8 },
+  botonChatarra: { shadowColor: "#912020", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
   botonEmoji: { fontSize: 32 },
   botonTexto: { fontSize: 18, fontWeight: "900", color: "#fff" },
   feedbackBox: { borderRadius: 20, paddingVertical: 12, alignItems: "center", marginBottom: 10, borderWidth: 2, borderColor: "#fff" },
   feedbackOk: { backgroundColor: "#4CAF50" },
   feedbackMal: { backgroundColor: "#FF8A65" },
   feedbackTexto: { fontSize: 20, fontWeight: "900", color: "#fff" },
-  filaMono: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 24, paddingVertical: 10, paddingHorizontal: 16 },
-  emojiMono: { fontSize: 40 },
-  burbujaMono: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 16, paddingVertical: 8, paddingHorizontal: 16 },
-  textoBurbuja: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  filaMono: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginTop: 18,
+    paddingVertical: 10,
+  },
+emojiMono: { fontSize: 40 },
+  burbujaMono: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+  },
+
+  textoBurbuja: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#023f5e",
+    textAlign: "center",
+  },
 });

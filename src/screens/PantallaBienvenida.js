@@ -3,15 +3,52 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Personaje from "../components/Personaje"; // ✅ Importa el componente
+import { Image } from "react-native";
 
 const { width, height } = Dimensions.get("window");
+const AnimatedImage = Animated.createAnimatedComponent(Image);
+
+// Estrellas generadas una sola vez
+const STARS = Array.from({ length: 28 }, (_, i) => ({
+  id: i,
+  top: Math.random() * height,
+  left: Math.random() * width,
+  size: Math.random() * 3 + 1.5,
+  duration: Math.random() * 2000 + 1500,
+  delay: Math.random() * 2000,
+}));
+
+function StarDot({ top, left, size, duration, delay }) {
+  const opacity = useRef(new Animated.Value(0.2)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(opacity, { toValue: 0.9, duration, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.2, duration, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View style={{
+      position: "absolute",
+      top, left,
+      width: size, height: size,
+      borderRadius: size / 2,
+      backgroundColor: "white",
+      opacity,
+    }} />
+  );
+}
 
 export default function PantallaBienvenida({ navigation }) {
   const bounceAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const floatAnims = useRef([0,1,2,3,4,5].map(() => new Animated.Value(0))).current;
+  const floatAnims = useRef([0, 1, 2, 3, 4, 5].map(() => new Animated.Value(0))).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -49,12 +86,23 @@ export default function PantallaBienvenida({ navigation }) {
   };
 
   return (
-    <LinearGradient
-      colors={["#E8F5E9", "#A5D6A7", "#66BB6A"]}
-      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-      style={styles.contenedor}
-    >
-      {/* DECORACIÓN DE FONDO */}
+    <View style={styles.contenedor}>
+
+      {/* ── FONDO BASE ── */}
+      <LinearGradient
+        colors={["#14c8bf", "#107b7d", "#0d142b"]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* ── GLOWS ── */}
+      <View style={[styles.glow, styles.glow1]} />
+      <View style={[styles.glow, styles.glow2]} />
+      <View style={[styles.glow, styles.glow3]} />
+
+      {/* ── ESTRELLAS ── */}
+      {STARS.map((s) => <StarDot key={s.id} {...s} />)}
+
+      {/* ── CÍRCULOS DECORATIVOS ── */}
       <View style={styles.fondoDecoracion}>
         <View style={styles.circulo1} />
         <View style={styles.circulo2} />
@@ -62,138 +110,144 @@ export default function PantallaBienvenida({ navigation }) {
         <View style={styles.circulo4} />
       </View>
 
-      {/* EMOTICONES FLOTANTES */}
+      {/* ── EMOTICONES FLOTANTES ── */}
       <View style={styles.flotantesContainer}>
-        <Animated.Text style={[styles.flotante, styles.flotante1, { transform: [{ translateY: floatAnims[0] }] }]}>
-          🍎
-        </Animated.Text>
-        <Animated.Text style={[styles.flotante, styles.flotante2, { transform: [{ translateY: floatAnims[1] }] }]}>
-          🥑
-        </Animated.Text>
-        <Animated.Text style={[styles.flotante, styles.flotante3, { transform: [{ translateY: floatAnims[2] }] }]}>
-          🥦
-        </Animated.Text>
-        <Animated.Text style={[styles.flotante, styles.flotante4, { transform: [{ translateY: floatAnims[3] }] }]}>
-          🍕
-        </Animated.Text>
-        <Animated.Text style={[styles.flotante, styles.flotante5, { transform: [{ translateY: floatAnims[4] }] }]}>
-          🍇
-        </Animated.Text>
-        <Animated.Text style={[styles.flotante, styles.flotante6, { transform: [{ translateY: floatAnims[5] }] }]}>
-          🌽
-        </Animated.Text>
+        {[
+          [floatAnims[0], styles.flotante1, "🍎"],
+          [floatAnims[1], styles.flotante2, "🥑"],
+          [floatAnims[2], styles.flotante3, "🥦"],
+          [floatAnims[3], styles.flotante4, "🍕"],
+          [floatAnims[4], styles.flotante5, "🍇"],
+          [floatAnims[5], styles.flotante6, "🌽"],
+        ].map(([anim, pos, emoji], i) => (
+          <Animated.Text
+            key={i}
+            style={[styles.flotante, pos, { transform: [{ translateY: anim }] }]}
+          >
+            {emoji}
+          </Animated.Text>
+        ))}
       </View>
 
+      {/* ── CONTENIDO CENTRAL ── */}
       <Animated.View style={[styles.centro, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-        
-        {/* ✅ MASCOTA CON EL COMPONENTE PERSONAJE */}
+
+        {/* MASCOTA */}
         <Animated.View style={{ transform: [{ translateY: bounceAnim }] }}>
-          <Personaje 
-            tipo="mono"        // 🐒
-            tamanio={100}      // Tamaño grande para la bienvenida
-            animar={true}      // Rebota solito
-            mensaje="¡Bienvenido!" 
+          <Personaje
+            tipo="mono"
+            tamanio={100}
+            animar={true}
+            mensaje="¡Bienvenido!"
             estilo={styles.mascotaPersonaje}
           />
         </Animated.View>
 
+        {/* TÍTULO */}
         <View style={styles.cajaTitle}>
           <Text style={styles.titulo}>COMIDA</Text>
           <Text style={styles.tituloDestacado}>DIVERTIDA</Text>
         </View>
 
+        {/* BOTÓN JUGAR */}
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-          <TouchableOpacity
-            style={styles.boton}
-            onPress={handleJugar}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.boton} onPress={handleJugar} activeOpacity={0.8}>
             <LinearGradient
-              colors={["#FFD93D", "#FFA000"]}
+              colors={["#03eb16ef", "#09f5fdf5"]}
               style={styles.botonGradiente}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.textoBoton}>🎮 ¡JUGAR!</Text>
+              <Text style={styles.textoBoton}>¡JUGAR!</Text>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
 
+        {/* ESTRELLAS */}
         <View style={styles.estrellitas}>
           {["⭐", "⭐", "⭐"].map((s, i) => (
             <Text key={i} style={styles.estrella}>{s}</Text>
           ))}
         </View>
+
       </Animated.View>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  contenedor: { 
-    flex: 1, 
-    justifyContent: "center", 
+  contenedor: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
     position: "relative",
   },
 
-  fondoDecoracion: { 
-    position: "absolute", 
-    top: 0, 
-    left: 0, 
-    right: 0, 
-    bottom: 0, 
-    overflow: "hidden" 
+  // GLOWS
+  glow: {
+    position: "absolute",
+    borderRadius: 999,
   },
-  circulo1: { 
-    position: "absolute", 
-    top: -80, 
-    right: -80, 
-    width: 280, 
-    height: 280, 
-    borderRadius: 140, 
-    backgroundColor: "rgba(255,255,255,0.15)" 
+  glow1: {
+    width: 280, height: 280,
+    top: -80, left: -60,
+    backgroundColor: "#fb9494",  // rojo tomate
+    opacity: 0.25,
   },
-  circulo2: { 
-    position: "absolute", 
-    bottom: -60, 
-    left: -60, 
-    width: 220, 
-    height: 220, 
-    borderRadius: 110, 
-    backgroundColor: "rgba(255,255,255,0.10)" 
+  glow2: {
+    width: 240, height: 240,
+    bottom: -60, right: -50,
+    backgroundColor: "#fdd122",  // amarillo maíz
+    opacity: 0.25,
   },
-  circulo3: { 
-    position: "absolute", 
-    top: "30%", 
-    right: -40, 
-    width: 140, 
-    height: 140, 
-    borderRadius: 70, 
-    backgroundColor: "rgba(255,255,255,0.08)" 
-  },
-  circulo4: { 
-    position: "absolute", 
-    bottom: "20%", 
-    left: -30, 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    backgroundColor: "rgba(255,215,0,0.10)" 
+  glow3: {
+    width: 160, height: 160,
+    top: "38%", left: "28%",
+    backgroundColor: "#0eed2c",  // verde brócoli
+    opacity: 0.15,
   },
 
+  // CÍRCULOS DECORATIVOS (ahora con tono blanco sobre fondo oscuro)
+  fondoDecoracion: {
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
+    overflow: "hidden",
+  },
+  circulo1: {
+    position: "absolute",
+    top: -80, right: -80,
+    width: 280, height: 280, borderRadius: 140,
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  circulo2: {
+    position: "absolute",
+    bottom: -60, left: -60,
+    width: 220, height: 220, borderRadius: 110,
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  circulo3: {
+    position: "absolute",
+    top: "30%", right: -40,
+    width: 140, height: 140, borderRadius: 70,
+    backgroundColor: "rgba(255,255,255,0.03)",
+  },
+  circulo4: {
+    position: "absolute",
+    bottom: "20%", left: -30,
+    width: 100, height: 100, borderRadius: 50,
+    backgroundColor: "rgba(0,229,160,0.08)",
+  },
+
+  // FLOTANTES
   flotantesContainer: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     zIndex: 1,
   },
   flotante: {
     position: "absolute",
     fontSize: 40,
-    opacity: 0.6,
+    opacity: 0.75,
   },
   flotante1: { top: 30, left: 20 },
   flotante2: { top: 80, right: 20 },
@@ -202,72 +256,70 @@ const styles = StyleSheet.create({
   flotante5: { bottom: 130, left: 10 },
   flotante6: { bottom: 80, right: 10 },
 
-  centro: { 
-    alignItems: "center", 
-    justifyContent: "center", 
+  // CENTRO
+  centro: {
+    alignItems: "center",
+    justifyContent: "center",
     flex: 1,
     zIndex: 10,
   },
-  
   mascotaPersonaje: {
     marginBottom: 5,
   },
 
+  // TÍTULO — texto blanco sobre fondo oscuro
   cajaTitle: {
-    backgroundColor: "rgba(255,255,255,0.85)",
-    borderRadius: 30, 
-    paddingHorizontal: 30, 
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderRadius: 30,
+    paddingHorizontal: 30,
     paddingVertical: 14,
-    alignItems: "center", 
+    alignItems: "center",
     marginBottom: 30,
-    borderWidth: 2, 
-    borderColor: "rgba(255,255,255,0.3)",
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "rgba(0,229,160,0.35)",
   },
-  titulo: { 
-    fontSize: 44, 
-    fontWeight: "900", 
-    color: "#2E7D32", 
+  titulo: {
+    fontFamily: "Fredoka-700bold",
+    fontSize: 44,
+    fontWeight: "900",
+    color: "#ffffff",
     letterSpacing: 2,
   },
-  tituloDestacado: { 
-    fontSize: 44, 
-    fontWeight: "900", 
-    color: "#E65100", 
+  tituloDestacado: {
+    fontSize: 44,
+    fontWeight: "900",
+    color: "#bbe500",
     letterSpacing: 1,
   },
 
+  // BOTÓN (sin cambios, ya te gustaba)
   boton: {
-    borderRadius: 60,
+    borderRadius: 70,
     overflow: "hidden",
     elevation: 12,
-    shadowColor: "#FFA000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+    shadowColor: "#00a706",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
     shadowRadius: 12,
   },
   botonGradiente: {
-    paddingVertical: 20, 
-    paddingHorizontal: 60, 
-    borderWidth: 3,
-    borderColor: "rgba(255,255,255,0.5)",
+    paddingVertical: 25,
+    paddingHorizontal: 60,
   },
-  textoBoton: { 
-    fontSize: 32, 
-    fontWeight: "900", 
-    color: "#1B5E20" 
+  textoBoton: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: "#1B5E20",
   },
-  estrellitas: { 
-    flexDirection: "row", 
-    gap: 10, 
-    marginTop: 18 
+
+  // ESTRELLAS
+  estrellitas: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 18,
   },
-  estrella: { 
+  estrella: {
     fontSize: 24,
-    opacity: 0.7,
+    opacity: 0.8,
   },
 });

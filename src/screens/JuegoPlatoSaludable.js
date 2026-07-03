@@ -178,7 +178,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
 
   return (
     <LinearGradient
-      colors={["#2E7D32", "#4CAF50", "#FFD93D"]}
+      colors={["#14c8bf", "#107b7d", "#0d142b"]}
       style={styles.contenedor}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -230,7 +230,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
           }
         ]}>
           <LinearGradient
-            colors={["rgba(255,255,255,0.95)", "rgba(255,200,100,0.85)"]}
+            colors={["rgba(255,255,255,0.95)", "rgba(138, 255, 159, 0.98)"]}
             style={styles.plato}
           >
             <Animated.View style={{ transform: [{ translateY: floatAnim }] }}>
@@ -286,7 +286,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
           disabled={totalColocados === 0}
         >
           <LinearGradient
-            colors={["#FFD93D", "#FF8A65"]}
+            colors={["#5ae128dd", "#7ce56ce4"]}
             style={styles.boton}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   botonVolver: { backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 20, padding: 10, paddingHorizontal: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
   textoVolver: { fontSize: 24, color: "#fff", fontWeight: "900" },
   titulo: { fontSize: 17, fontWeight: "900", color: "#fff", flex: 1, textAlign: "center", textShadowColor: "rgba(0,0,0,0.2)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
-  estrellasBadge: { backgroundColor: "rgba(255,215,0,0.3)", borderRadius: 20, paddingVertical: 6, paddingHorizontal: 14, borderWidth: 1, borderColor: "rgba(255,215,0,0.15)" },
+  estrellasBadge: { backgroundColor: "rgba(224, 224, 223, 0.59)", borderRadius: 20, paddingVertical: 6, paddingHorizontal: 14, borderWidth: 1, borderColor: "rgba(255,215,0,0.15)" },
   estrellas: { fontSize: 16, fontWeight: "900", color: "#FFD700" },
 
   cajaInstruccion: { borderRadius: 24, marginBottom: 6, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     height: 170,
     borderRadius: 85,
     borderWidth: 6,
-    borderColor: "#FF8C00",
+    borderColor: "#0a4f4d",
     alignItems: "center",
     justifyContent: "center"
   },

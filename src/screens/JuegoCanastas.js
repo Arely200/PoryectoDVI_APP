@@ -339,7 +339,7 @@ export default function JuegoCanastas({ route, navigation }) {
 
   return (
     <LinearGradient
-      colors={['#E8F5E9', '#C8E6C9', '#A5D6A7']}
+      colors={["#14c8bf", "#107b7d", "#0d142b"]}
       style={s.contenedor}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -393,7 +393,7 @@ export default function JuegoCanastas({ route, navigation }) {
       <View style={s.canastas}>
         <View style={s.canasta}>
           <LinearGradient
-            colors={['#43A047', '#2E7D32', '#1B5E20']}
+            colors={['#46b24b', '#25922b', '#076f0e']}
             style={s.gradCanasta}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -409,7 +409,7 @@ export default function JuegoCanastas({ route, navigation }) {
 
         <View style={s.canasta}>
           <LinearGradient
-            colors={['#E53935', '#ff5100', '#f14d01']}
+            colors={['#ef5757', '#dd5454', 'rgb(188, 11, 11)']}
             style={s.gradCanasta}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -437,20 +437,20 @@ export default function JuegoCanastas({ route, navigation }) {
                 resumenData.gano
                   ? ['#1B5E20', '#2E7D32', '#43A047']
                   : resumenData.perdido
-                  ? ['#B71C1C', '#C62828', '#E53935']
+                  ? ['#f74949', '#d83b3b', '#d65353']
                   : ['#F57C00', '#E65100', '#FF8F00']
               }
               style={s.modalGrad}
             >
               <Text style={s.modalEmoji}>
-                {resumenData.gano ? '🏆' : resumenData.perdido ? '😢' : '💪'}
+                {resumenData.gano ? '🏆' : resumenData.perdido ? '😊' : '💪'}
               </Text>
 
               <Text style={s.modalTitulo}>
                 {resumenData.gano 
                   ? '¡FELICIDADES!' 
                   : resumenData.perdido 
-                  ? '¡PERDISTE!' 
+                  ? '¡Intentalo de nuevo!' 
                   : '¡BUEN INTENTO!'
                 }
               </Text>
@@ -532,24 +532,24 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 14,
-    paddingTop: 44,
+    paddingTop: 45,
     paddingBottom: 10,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: '#fcfcfceb',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0F2E9',
+    borderBottomColor: '#ffffff',
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
   },
   chip: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(76,175,80,0.2)',
+    borderColor: '#107b7d',
   },
   chipTxt: { fontSize: 13, fontWeight: '700', color: '#1B5E20' },
   filaVidas: { flexDirection: 'row', gap: 2 },
@@ -562,7 +562,7 @@ const s = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(76,175,80,0.15)',
+    borderColor: '#4caf5026',
   },
   barraFill: { height: 8, borderRadius: 6 },
 
@@ -591,9 +591,9 @@ const s = StyleSheet.create({
     top: 0,
   },
   itemWrapper: {
-    backgroundColor: 'rgba(255,255,255,0.97)',
+    backgroundColor: 'rgba(222, 240, 243, 0.97)',
     borderRadius: 22,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 6,
     alignItems: 'center',
     width: ITEM_W,
@@ -603,17 +603,17 @@ const s = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: '#31c4d1b6',
   },
   imgItem: {
-    width: 70,
-    height: 70,
+    width: 85,
+    height: 90,
     borderRadius: 14,
   },
   nombreItem: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#2E7D32',
+    color: '#000000',
     textAlign: 'center',
     marginTop: 4,
   },

@@ -7,10 +7,10 @@ import { leerNombre, guardarNombre } from "../utils/almacenamiento";
 import Personaje from "../components/Personaje";
 
 const { width } = Dimensions.get("window");
-
+  
 const SECCIONES = [
-  { id: 1, titulo: "VERDURAS", subtitulo: "vs Chatarra", emoji: "🥦", colors: ["#4CAF50", "#2E7D32"], pantalla: "JuegoCanastas" },
-  { id: 2, titulo: "FRUTAS", subtitulo: "vs Dulces", emoji: "🍎", colors: ["#FF8A65", "#E64A19"], pantalla: "JuegoPlatoSaludable" },
+  { id: 1, titulo: "VERDURAS", subtitulo: "vs Chatarra", emoji: "🥦", colors: ["#8bee8f", "#46a44b"], pantalla: "JuegoCanastas" },
+  { id: 2, titulo: "FRUTAS", subtitulo: "vs Dulces", emoji: "🍎", colors: ["#ef8989", "#dd0e0e"], pantalla: "JuegoPlatoSaludable" },
   { id: 3, titulo: "BEBIDAS", subtitulo: "Sanas vs Chatarra", emoji: "🧃", colors: ["#64B5F6", "#0D47A1"], pantalla: "JuegoSeleccionar" },
   { id: 4, titulo: "SNACKS", subtitulo: "Sanos vs Chatarra", emoji: "🍇", colors: ["#FFD93D", "#F57C00"], pantalla: "JuegoSnacks" },
 ];
@@ -48,7 +48,7 @@ export default function PantallaInicio({ navigation }) {
   }
 
   return (
-    <LinearGradient colors={["#4CAF50", "#FFD93D"]} style={styles.contenedor} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+    <LinearGradient colors={["#14c8bf", "#107b7d", "#0d142b"]} style={styles.contenedor} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
       <View style={styles.fondoDecoracion}>
         <View style={styles.circulo1} />
         <View style={styles.circulo2} />
