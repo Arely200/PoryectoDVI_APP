@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Text, Animated, StyleSheet } from "react-native";
+import { Text, Animated, StyleSheet, View } from "react-native";
 
 const PERSONAJES = {
   mono: "🐒",
@@ -11,10 +11,13 @@ const PERSONAJES = {
 
 export default function Personaje({ 
   tipo = "mono", 
+  imagen = null,
   tamanio = 60, 
   mensaje = "",
   animar = true,
-  estilo = {}
+  estilo = {},
+  circulo = true,
+  bordeImagen = null,
 }) {
   const bounceAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -53,6 +56,8 @@ export default function Personaje({
     ).start();
   }, []);
 
+  const radioImagen = bordeImagen != null ? bordeImagen : circulo ? tamanio / 2 : 12;
+
   return (
     <Animated.View
       style={[
@@ -63,9 +68,19 @@ export default function Personaje({
         estilo,
       ]}
     >
-      <Text style={[styles.emoji, { fontSize: tamanio }]}>
-        {PERSONAJES[tipo] || "🐒"}
-      </Text>
+      {imagen ? (
+        <Animated.View style={[styles.imagenContenedor, { width: tamanio, height: tamanio, borderRadius: radioImagen }]}>
+          <Animated.Image
+            source={imagen}
+            style={[styles.imagen, { width: tamanio, height: tamanio, borderRadius: radioImagen }]}
+            resizeMode="cover"
+          />
+        </Animated.View>
+      ) : (
+        <Text style={[styles.emoji, { fontSize: tamanio }]}> 
+          {PERSONAJES[tipo] || "🐒"}
+        </Text>
+      )}
       {mensaje ? (
         <Animated.View style={styles.burbuja}>
           <Text style={styles.mensaje}>{mensaje}</Text>
@@ -83,6 +98,16 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0,0,0,0.15)",
     textShadowOffset: { width: 2, height: 4 },
     textShadowRadius: 6,
+  },
+  imagenContenedor: {
+    overflow: "hidden",
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imagen: {
+    width: "100%",
+    height: "100%",
   },
   burbuja: {
     backgroundColor: "rgba(255,255,255,0.95)",

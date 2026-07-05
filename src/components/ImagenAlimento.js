@@ -105,6 +105,10 @@ export default function ImagenAlimento({
       style={[
         styles.contenedor,
         {
+          width: tamanio,
+          height: tamanio,
+          alignItems: 'center',
+          justifyContent: 'center',
           transform: [
             { translateY: bounceAnim },
             { scale: scaleAnim },
@@ -117,7 +121,7 @@ export default function ImagenAlimento({
     >
       <Image
         source={fuente}
-        style={[styles.imagen, { width: tamanio, height: tamanio }]}
+        style={[styles.imagen, { width: '100%', height: '100%' }]}
         resizeMode="contain"
       />
     </Animated.View>

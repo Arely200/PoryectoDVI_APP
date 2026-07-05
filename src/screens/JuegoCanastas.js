@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Image,
   Animated, Dimensions, Vibration, PanResponder,
-  Modal, TouchableOpacity,
+  TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Confeti from '../components/Confeti';
@@ -16,30 +16,31 @@ import { guardarNivelCompletado } from '../utils/premios';
 const { width, height } = Dimensions.get('window');
 const TOTAL_ALIMENTOS    = 15;
 const PUNTOS_POR_ACIERTO = 10;
-const NUM_COLUMNAS       = 3;
-const ITEM_W             = 88;
+const NUM_COLUMNAS       = 2;
+const ITEM_W             = 124;
+const MARGEN_LATERAL     = 20;
 
-const COLUMNAS_X = Array.from({ length: NUM_COLUMNAS }, (_, i) => {
-  const espacio = width / NUM_COLUMNAS;
-  return espacio * i + (espacio - ITEM_W) / 2;
-});
+const COLUMNAS_X = [
+  MARGEN_LATERAL,
+  width - ITEM_W - MARGEN_LATERAL,
+];
 
 const POOL_COMPLETO = [
-  { nombre: 'Manzana',      tipo: 'saludable', imagen: require('../assets/imagenes/Manzna.png') },
-  { nombre: 'Plátano',      tipo: 'saludable', imagen: require('../assets/imagenes/banana.png') },
-  { nombre: 'Brócoli',      tipo: 'saludable', imagen: require('../assets/imagenes/brocoli.png') },
-  { nombre: 'Aguacate',     tipo: 'saludable', imagen: require('../assets/imagenes/aguacate.png') },
-  { nombre: 'Fresa',        tipo: 'saludable', imagen: require('../assets/imagenes/Fresa.png') },
-  { nombre: 'Limón',        tipo: 'saludable', imagen: require('../assets/imagenes/limon.png') },
-  { nombre: 'Agua',         tipo: 'saludable', imagen: require('../assets/imagenes/agua.jpg') },
-  { nombre: 'Leche',        tipo: 'saludable', imagen: require('../assets/imagenes/leche.jpg') },
-  { nombre: 'Hamburguesa',  tipo: 'chatarra',  imagen: require('../assets/imagenes/Hamburguesa.png') },
-  { nombre: 'Pizza',        tipo: 'chatarra',  imagen: require('../assets/imagenes/Pizza.png') },
-  { nombre: 'Papas Fritas', tipo: 'chatarra',  imagen: require('../assets/imagenes/papas fritas.jpg') },
-  { nombre: 'Helado',       tipo: 'chatarra',  imagen: require('../assets/imagenes/helado.jpg') },
-  { nombre: 'Chocolate',    tipo: 'chatarra',  imagen: require('../assets/imagenes/chocolate.png') },
-  { nombre: 'Dona',         tipo: 'chatarra',  imagen: require('../assets/imagenes/Dona.png') },
-  { nombre: 'Galleta',      tipo: 'chatarra',  imagen: require('../assets/imagenes/galleta.jpg') },
+  { nombre: 'Manzana',      tipo: 'saludable', imagen: require('../assets/imagenes/normalized/Manzna_std.png') },
+  { nombre: 'Plátano',      tipo: 'saludable', imagen: require('../assets/imagenes/normalized/banana_std.png') },
+  { nombre: 'Brócoli',      tipo: 'saludable', imagen: require('../assets/imagenes/normalized/brocoli_std.png') },
+  { nombre: 'Aguacate',     tipo: 'saludable', imagen: require('../assets/imagenes/normalized/aguacate_std.png') },
+  { nombre: 'Fresa',        tipo: 'saludable', imagen: require('../assets/imagenes/normalized/Fresa_std.png') },
+  { nombre: 'Limón',        tipo: 'saludable', imagen: require('../assets/imagenes/normalized/limon_std.png') },
+  { nombre: 'Agua',         tipo: 'saludable', imagen: require('../assets/imagenes/normalized/agua_std.png') },
+  { nombre: 'Leche',        tipo: 'saludable', imagen: require('../assets/imagenes/normalized/leche_std.png') },
+  { nombre: 'Hamburguesa',  tipo: 'chatarra',  imagen: require('../assets/imagenes/normalized/Hamburguesa_std.png') },
+  { nombre: 'Pizza',        tipo: 'chatarra',  imagen: require('../assets/imagenes/normalized/Pizza_std.png') },
+  { nombre: 'Papas Fritas', tipo: 'chatarra',  imagen: require('../assets/imagenes/normalized/papas fritas_std.png') },
+  { nombre: 'Helado',       tipo: 'chatarra',  imagen: require('../assets/imagenes/normalized/helado_std.png') },
+  { nombre: 'Chocolate',    tipo: 'chatarra',  imagen: require('../assets/imagenes/normalized/chocolate_std.png') },
+  { nombre: 'Dona',         tipo: 'chatarra',  imagen: require('../assets/imagenes/normalized/Dona_std.png') },
+  { nombre: 'Galleta',      tipo: 'chatarra',  imagen: require('../assets/imagenes/normalized/galleta_std.png') },
 ];
 
 function mezclar(arr) {
@@ -55,6 +56,16 @@ function mezclar(arr) {
 function AlimentoItem({ alimento, onSoltar, juegoTerminado, onDragChange }) {
   const pan    = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const escala = useRef(new Animated.Value(1)).current;
+  const alimentosGrandes = [
+    'Plátano',
+    'Fresa',
+    'Aguacate',
+    'Dona',
+    'Hamburguesa',
+    'Pizza',
+    'Brócoli',
+  ];
+  const itemSize = alimentosGrandes.includes(alimento.nombre) ? 118 : 108;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -130,7 +141,7 @@ function AlimentoItem({ alimento, onSoltar, juegoTerminado, onDragChange }) {
       ]}
     >
       <View style={s.itemWrapper}>
-        <Image source={alimento.imagen} style={s.imgItem} resizeMode="contain" />
+        <Image source={alimento.imagen} style={[s.imgItem, { width: itemSize, height: itemSize }]} resizeMode="contain" />
         <Text style={s.nombreItem}>{alimento.nombre}</Text>
       </View>
     </Animated.View>
@@ -150,16 +161,6 @@ export default function JuegoCanastas({ route, navigation }) {
   const [aciertos,       setAciertos]       = useState(0);
   const [fallos,         setFallos]         = useState(0);
   const [confeti,        setConfeti]        = useState(false);
-  
-  // ========== NUEVO: Estado para mostrar resumen interno ==========
-  const [mostrarResumen, setMostrarResumen] = useState(false);
-  const [resumenData, setResumenData] = useState({
-    aciertos: 0,
-    fallos: 0,
-    total: TOTAL_ALIMENTOS,
-    gano: false,
-    perdido: false,
-  });
 
   const columnaRef   = useRef(0);
   const colaRef      = useRef(mezclar(POOL_COMPLETO));
@@ -168,6 +169,25 @@ export default function JuegoCanastas({ route, navigation }) {
   const fallosRef    = useRef(0);
   const terminadoRef = useRef(false);
   const vidasRef     = useRef(3);
+  const yaNavego     = useRef(false);
+  const manoAnim     = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(manoAnim, {
+          toValue: -6,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(manoAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [manoAnim]);
 
   const siguienteAlimento = () => {
     if (indiceRef.current >= TOTAL_ALIMENTOS) return null;
@@ -179,16 +199,16 @@ export default function JuegoCanastas({ route, navigation }) {
       ...base,
       id:         `${indiceRef.current}-${Date.now()}`,
       posX:       COLUMNAS_X[col],
-      posYAnim:   new Animated.Value(-100),
-      velocidad:  0.5 + Math.random() * 0.2,
+      posYAnim:   new Animated.Value(0),
+      velocidad:  0.25 + Math.random() * 0.12,
       isDragging: false,
     };
   };
 
-  // ── Agregar hasta 3 alimentos ──
+  // ── Agregar hasta 2 alimentos en la pantalla  
   useEffect(() => {
     if (!juegoActivo || juegoTerminado) return;
-    if (alimentos.length < 3 && totalGenerados < TOTAL_ALIMENTOS) {
+    if (alimentos.length < NUM_COLUMNAS && totalGenerados < TOTAL_ALIMENTOS) {
       const nuevo = siguienteAlimento();
       if (nuevo) {
         setAlimentos(prev => [...prev, nuevo]);
@@ -252,18 +272,17 @@ export default function JuegoCanastas({ route, navigation }) {
     await registrarPartidaJugada();
     await guardarNivelCompletado(nivelId);
 
-    // ========== GUARDAR DATOS PARA EL RESUMEN ==========
-    setResumenData({
-      aciertos: aciertosRef.current,
-      fallos: fallosRef.current,
-      total: TOTAL_ALIMENTOS,
-      gano: ganoPartida,
-      perdido: perdioPartida,
-    });
-
-    // ========== MOSTRAR RESUMEN INTERNO ==========
     setTimeout(() => {
-      setMostrarResumen(true);
+      if (!yaNavego.current) {
+        yaNavego.current = true;
+        navigation.replace('PantallaResultados', {
+          nivelId,
+          aciertos: aciertosRef.current,
+          total: TOTAL_ALIMENTOS,
+          fallidos: fallosRef.current,
+          perdido: perdioPartida,
+        });
+      }
     }, 1500);
   }
 
@@ -313,7 +332,6 @@ export default function JuegoCanastas({ route, navigation }) {
   };
 
   const reintentar = () => {
-    setMostrarResumen(false);
     setConfeti(false);
     setJuegoTerminado(false);
     setJuegoActivo(true);
@@ -333,9 +351,6 @@ export default function JuegoCanastas({ route, navigation }) {
   };
 
   const vidasArr = [0, 1, 2].map(i => i < vidas);
-
-  // ========== ESTRELLAS DEL RESUMEN ==========
-  const estrellasLlenas = Math.round((resumenData.aciertos / resumenData.total) * 5);
 
   return (
     <LinearGradient
@@ -373,7 +388,13 @@ export default function JuegoCanastas({ route, navigation }) {
 
       {/* INSTRUCCIÓN */}
       <View style={s.instruccion}>
-        <Text style={s.instruccionTxt}>👆 ¡Arrastra el alimento a la canasta correcta!</Text>
+        <Animated.View style={[s.instruccionIconBox, { transform: [{ translateY: manoAnim }] }]}> 
+          <Text style={s.instruccionIcon}>👆</Text>
+        </Animated.View>
+        <View style={s.instruccionTxtBlock}>
+          <Text style={s.instruccionTxtBold}>ARRASTRA</Text>
+          <Text style={s.instruccionTxtSmall}>Toca la fruta y llévala a la canasta</Text>
+        </View>
       </View>
 
       {/* ÁREA DE CAÍDA */}
@@ -424,109 +445,15 @@ export default function JuegoCanastas({ route, navigation }) {
         </View>
       </View>
 
-      {/* ========== MODAL DE RESUMEN INTERNO ========== */}
-      <Modal
-        visible={mostrarResumen}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={s.modalOverlay}>
-          <Animated.View style={s.modalTarjeta}>
-            <LinearGradient
-              colors={
-                resumenData.gano
-                  ? ['#1B5E20', '#2E7D32', '#43A047']
-                  : resumenData.perdido
-                  ? ['#f74949', '#d83b3b', '#d65353']
-                  : ['#F57C00', '#E65100', '#FF8F00']
-              }
-              style={s.modalGrad}
-            >
-              <Text style={s.modalEmoji}>
-                {resumenData.gano ? '🏆' : resumenData.perdido ? '😊' : '💪'}
-              </Text>
-
-              <Text style={s.modalTitulo}>
-                {resumenData.gano 
-                  ? '¡FELICIDADES!' 
-                  : resumenData.perdido 
-                  ? '¡Intentalo de nuevo!' 
-                  : '¡BUEN INTENTO!'
-                }
-              </Text>
-
-              <Text style={s.modalSub}>
-                Clasificaste {resumenData.aciertos} de {resumenData.total} alimentos correctamente
-              </Text>
-
-              {/* ESTRELLAS */}
-              <View style={s.modalEstrellas}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Text key={i} style={s.modalEstrella}>
-                    {i < estrellasLlenas ? '⭐' : '☆'}
-                  </Text>
-                ))}
-              </View>
-
-              {/* ESTADÍSTICAS */}
-              <View style={s.modalStats}>
-                <View style={s.modalStat}>
-                  <Text style={[s.modalStatNum, { color: '#A5D6A7' }]}>
-                    {resumenData.aciertos}
-                  </Text>
-                  <Text style={s.modalStatLbl}>✅ Aciertos</Text>
-                </View>
-                <View style={s.modalDivider} />
-                <View style={s.modalStat}>
-                  <Text style={[s.modalStatNum, { color: '#FFCDD2' }]}>
-                    {resumenData.fallos}
-                  </Text>
-                  <Text style={s.modalStatLbl}>❌ Fallados</Text>
-                </View>
-              </View>
-
-              {/* MENSAJE EXTRA */}
-              <View style={s.modalMensajeBox}>
-                <Text style={s.modalMensajeTxt}>
-                  {resumenData.gano
-                    ? '¡Muy bien! Sabes distinguir los alimentos saludables 🥦🍎'
-                    : resumenData.perdido
-                    ? 'No te rindas, ¡inténtalo de nuevo! 💪'
-                    : '¡Casi lo logras! Practica un poco más 🌟'}
-                </Text>
-              </View>
-
-              {/* BOTONES */}
-              <TouchableOpacity
-                style={s.modalBtnPrincipal}
-                onPress={resumenData.perdido ? reintentar : resumenData.gano ? irSiguienteNivel : reintentar}
-                activeOpacity={0.85}
-              >
-                <LinearGradient colors={['#FFD93D', '#F57C00']} style={s.modalGradBtn}>
-                  <Text style={s.modalTxtBtn}>
-                    {resumenData.perdido
-                      ? '🔄 Intentar de nuevo'
-                      : resumenData.gano
-                      ? '🚀 Siguiente Nivel'
-                      : '🔄 Intentar de nuevo'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={s.modalBtnSec} onPress={volverInicio} activeOpacity={0.85}>
-                <Text style={s.modalTxtBtnSec}>🏠 Volver al Inicio</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </Animated.View>
-        </View>
-      </Modal>
     </LinearGradient>
   );
 }
 
 const s = StyleSheet.create({
+  // Contenedor principal de la pantalla de canastas
   contenedor: { flex: 1 },
 
+  // Encabezado con puntaje y vidas
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -554,6 +481,7 @@ const s = StyleSheet.create({
   chipTxt: { fontSize: 13, fontWeight: '700', color: '#1B5E20' },
   filaVidas: { flexDirection: 'row', gap: 2 },
 
+  // Barra de progreso que muestra cuántos alimentos han caído
   barraFondo: {
     height: 8,
     backgroundColor: '#E8F5E9',
@@ -566,35 +494,73 @@ const s = StyleSheet.create({
   },
   barraFill: { height: 8, borderRadius: 6 },
 
+  // Caja de instrucción con icono y texto de arrastrar
   instruccion: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255,247,205,0.85)',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(255,247,205,0.95)',
     marginHorizontal: 14,
     marginTop: 8,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,193,7,0.3)',
+    borderColor: 'rgba(255,193,7,0.4)',
+  },
+  instruccionIconBox: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  instruccionIcon: {
+    fontSize: 28,
+  },
+  instruccionTxtBlock: {
+    flex: 1,
+  },
+  instruccionTxtBold: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#4E342E',
+  },
+  instruccionTxtSmall: {
+    fontSize: 13,
+    color: '#4E342E',
+    marginTop: 2,
   },
   instruccionTxt: { fontSize: 14, fontWeight: '600', color: '#4E342E' },
 
+  // Zona de caída donde están los alimentos que el niño arrastra
   area: {
     flex: 1,
     position: 'relative',
   },
 
+  // Cada alimento que cae y se puede arrastrar
   item: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
     width: ITEM_W,
     top: 0,
+    zIndex: 99,
+    elevation: 20,
   },
+  // Contenedor de cada tarjeta de alimento dentro de la zona de caída
   itemWrapper: {
     backgroundColor: 'rgba(222, 240, 243, 0.97)',
-    borderRadius: 22,
-    paddingVertical: 10,
-    paddingHorizontal: 6,
+    borderRadius: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     alignItems: 'center',
     width: ITEM_W,
     shadowColor: '#000',
@@ -606,9 +572,9 @@ const s = StyleSheet.create({
     borderColor: '#31c4d1b6',
   },
   imgItem: {
-    width: 85,
-    height: 90,
-    borderRadius: 14,
+    width: 108,
+    height: 108,
+    borderRadius: 20,
   },
   nombreItem: {
     fontSize: 10,
@@ -618,10 +584,12 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
 
+  // Área inferior con las canastas de saludable y chatarra
   canastas: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     paddingBottom: 20,
     backgroundColor: 'rgba(255,255,255,0.92)',
@@ -633,8 +601,9 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
   },
+  // Contenedor de cada canasta
   canasta: {
-    flex: 1,
+    flex: 0.48,
     borderRadius: 24,
     overflow: 'hidden',
     elevation: 10,
@@ -680,119 +649,5 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 3,
     borderRadius: 12,
-  },
-
-  // ===== MODAL DE RESUMEN =====
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalTarjeta: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 30,
-    overflow: 'hidden',
-    elevation: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-  },
-  modalGrad: {
-    padding: 28,
-    alignItems: 'center',
-    gap: 12,
-  },
-  modalEmoji: { fontSize: 68 },
-  modalTitulo: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#fff',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  modalSub: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
-  },
-  modalEstrellas: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  modalEstrella: { fontSize: 28 },
-  modalStats: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 16,
-    paddingVertical: 14,
-    width: '100%',
-    justifyContent: 'space-around',
-  },
-  modalStat: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  modalStatNum: {
-    fontSize: 34,
-    fontWeight: '900',
-    lineHeight: 40,
-  },
-  modalStatLbl: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '600',
-  },
-  modalDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  modalMensajeBox: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    width: '100%',
-  },
-  modalMensajeTxt: {
-    fontSize: 14,
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  modalBtnPrincipal: {
-    width: '100%',
-    borderRadius: 20,
-    overflow: 'hidden',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  modalGradBtn: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  modalTxtBtn: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#1B5E20',
-  },
-  modalBtnSec: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    width: '100%',
-  },
-  modalTxtBtnSec: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.85)',
   },
 });

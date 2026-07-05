@@ -33,9 +33,9 @@ export default function App() {
         }}
       >
         <Tab.Screen
-          name="Jugar"
+          name="inicio"
           component={StackJugar}
-          options={{ tabBarIcon: iconoTab("🎮") }}
+          options={{ tabBarIcon: iconoTab("🏠") }}
         />
         <Tab.Screen
           name="Logros"

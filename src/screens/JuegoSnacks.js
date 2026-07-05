@@ -1,6 +1,6 @@
 // src/screens/JuegoSnacks.js
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { NIVELES, mezclar } from "../data/niveles";
 import { sumarEstrellas, guardarProgresoNivel, registrarPartidaJugada } from "../utils/almacenamiento";
@@ -197,8 +197,8 @@ export default function JuegoSnacks({ route, navigation }) {
         styles.tarjeta,
         { transform: [{ scale: scaleAnim }, { translateX: shakeAnim }] },
       ]}>
-        <Animated.View style={{ transform: [{ translateY: floatAnim }] }}>
-          <ImagenAlimento fuente={preguntaActual.imagen} tamanio={120} animar={false} />
+        <Animated.View style={styles.imagenTarjetaWrapper}>
+          <ImagenAlimento fuente={preguntaActual.imagen} tamanio={180} animar={false} estilo={styles.imagenTarjeta} />
         </Animated.View>
         <Text style={styles.nombreComida}>{preguntaActual.nombre}</Text>
       </Animated.View>
@@ -250,9 +250,9 @@ export default function JuegoSnacks({ route, navigation }) {
         </View>
       )}
 
-      {/* ========== MONO ========== */}
+      {/* ======*/}
       <View style={styles.filaMono}>
-        <Text style={styles.emojiMono}>🐒</Text>
+        <Image source={require("../assets/imagenes/chef2.png")} style={styles.chefImage} resizeMode="contain" />
         <View style={styles.burbujaMono}>
           <Text style={styles.textoBurbuja}>{getMensajeMono()}</Text>
         </View>
@@ -262,9 +262,10 @@ export default function JuegoSnacks({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  // Contenedor principal de la pantalla
   contenedor: { flex: 1, paddingTop: 40, paddingHorizontal: 16, paddingBottom: 20 },
   
-  // ===== ERROR =====
+  // Estilos para la pantalla de error si el nivel no carga
   errorContainer: { 
     flex: 1, 
     justifyContent: "center", 
@@ -277,6 +278,7 @@ const styles = StyleSheet.create({
   errorBoton: { backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 20, paddingVertical: 12, paddingHorizontal: 24 },
   errorBotonTexto: { fontSize: 18, fontWeight: "700", color: "#fff" },
 
+  // Fondos decorativos en la pantalla
   fondoDecoracion: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" },
   circulo1: {
     position: "absolute",
@@ -296,6 +298,7 @@ const styles = StyleSheet.create({
     borderRadius: 75,
     backgroundColor: "rgba(255,255,255,0.08)",
   },
+  // Barra superior con botón atrás, título y estrellas
   barraSuperior: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   botonVolver: { backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 15, paddingVertical: 8, paddingHorizontal: 15 },
   flecha: { fontSize: 24, color: "#fff", fontWeight: "900" },
@@ -310,32 +313,48 @@ const styles = StyleSheet.create({
   contadorTexto: { fontSize: 14, color: "#fff", fontWeight: "700" },
   contadorPreguntas: { fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: "700" },
   
+  // Tarjeta principal que muestra la comida y la pregunta
   tarjeta: {
     backgroundColor: "rgba(255, 252, 252, 0.95)",
     borderRadius: 40,
     alignItems: "center",
-    paddingVertical: 50,
-    marginBottom: 45,
+    paddingVertical: 46,
+    marginBottom: 28,
     elevation: 12,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
   },
+  imagenTarjetaWrapper: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    minHeight: 240,
+  },
+  imagenTarjeta: {
+    width: 180,
+    height: 180,
+  },
   nombreComida: { fontSize: 28, fontWeight: "900", color: "#023f5e", marginTop: 15 },
-  cajaPregunta: { backgroundColor: "rgba(255,255,255,0.9)", borderRadius: 16, paddingVertical: 14, alignItems: "center", marginBottom: 16 },
+  // Caja que contiene la pregunta del juego
+  cajaPregunta: { backgroundColor: "rgba(255,255,255,0.9)", borderRadius: 18, paddingVertical: 17, alignItems: "center", marginBottom: 20 },
   textoPregunta: { fontSize: 20, fontWeight: "900", color: "#023f5e" },
-  filaBotones: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  // Fila de botones saludables / chatarras
+  filaBotones: { flexDirection: "row", justifyContent: "space-between", gap: 12, marginTop: -5, marginBottom: 20 },
   boton: { flex: 1, borderRadius: 20, overflow: "hidden", elevation: 8 },
   botonGradiente: { paddingVertical: 18, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 10 },
   botonSaludable: { shadowColor: "#052b06", shadowOffset: { width: 0, height:4 }, shadowOpacity: 0.4, shadowRadius: 8 },
   botonChatarra: { shadowColor: "#912020", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
   botonEmoji: { fontSize: 32 },
   botonTexto: { fontSize: 18, fontWeight: "900", color: "#fff" },
-  feedbackBox: { borderRadius: 20, paddingVertical: 12, alignItems: "center", marginBottom: 10, borderWidth: 2, borderColor: "#fff" },
+  feedbackBox: { borderRadius: 20, paddingVertical: 12
+    , alignItems: "center", marginBottom: 10, borderWidth: 2, borderColor: "#fff" },
   feedbackOk: { backgroundColor: "#4CAF50" },
   feedbackMal: { backgroundColor: "#FF8A65" },
   feedbackTexto: { fontSize: 20, fontWeight: "900", color: "#fff" },
+  // Barra del chef con mensaje motivador
   filaMono: {
     flexDirection: "row",
     alignItems: "center",
@@ -344,7 +363,8 @@ const styles = StyleSheet.create({
     marginTop: 18,
     paddingVertical: 10,
   },
-emojiMono: { fontSize: 40 },
+  chefImage: { width: 40, height: 40, borderRadius: 20 },
+  emojiMono: { fontSize: 40 },
   burbujaMono: {
     flex: 1,
     backgroundColor: "#FFFFFF",

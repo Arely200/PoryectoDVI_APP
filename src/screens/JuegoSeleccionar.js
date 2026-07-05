@@ -1,6 +1,6 @@
 // src/screens/JuegoSeleccionar.js
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { NIVELES, mezclar } from "../data/niveles";
 import { sumarEstrellas, guardarProgresoNivel, registrarPartidaJugada } from "../utils/almacenamiento";
@@ -134,7 +134,7 @@ export default function JuegoSeleccionar({ route, navigation }) {
         "¡Ánimo! La siguiente será la buena ✨",
       ];
       const mensajeAleatorio = mensajes[Math.floor(Math.random() * mensajes.length)];
-      mostrarMensajeAbajo("😊", mensajeAleatorio);
+      mostrarMensajeAbajo("", mensajeAleatorio);
     }
   }
 
@@ -220,7 +220,7 @@ export default function JuegoSeleccionar({ route, navigation }) {
       )}
 
       <View style={styles.filaMono}>
-        <Text style={styles.emojiMono}>🐒</Text>
+        <Image source={require("../assets/imagenes/chef2.png")} style={styles.chefImage} resizeMode="contain" />
         <View style={styles.burbujaMono}>
           <Text style={styles.textoBurbuja}>
             {juegoTerminado ? "¡Eres increíble! 🌟" : 
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     borderWidth: 3, 
     borderColor: "rgba(255,255,255,0.3)", 
     elevation: 4,
-    minHeight: 130,
+    minHeight: 120,
   },
   itemCorrecto: { 
     width: "30%", 
@@ -336,6 +336,7 @@ const styles = StyleSheet.create({
   mensajeFinalTexto: { fontSize: 24, fontWeight: "bold", color: "#fff" },
   
   filaMono: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 24, paddingVertical: 10, paddingHorizontal: 16, marginTop: 8 },
+  chefImage: { width: 40, height: 40, borderRadius: 20 },
   emojiMono: { fontSize: 40 },
   burbujaMono: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 16, paddingVertical: 8, paddingHorizontal: 16 },
   textoBurbuja: { fontSize: 16, fontWeight: "700", color: "#fff" },

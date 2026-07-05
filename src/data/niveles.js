@@ -60,7 +60,7 @@ export const NIVELES = [
       { imagen: IMAGENES.papasFritas, nombre: "PAPAS Fritas", saludable: false },
       { imagen: IMAGENES.galleta, nombre: "GALLETAS", saludable: false },
       { imagen: IMAGENES.palomitas, nombre: "PALOMITAS DULCES", saludable: false },
-      { imagen: IMAGENES.chocolate, nombre: "CHOCOLATINA", saludable: false },
+      { imagen: IMAGENES.chocolate, nombre: "CHOCOLATE", saludable: false },
     ],
   },
 ];

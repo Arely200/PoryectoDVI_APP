@@ -2,7 +2,6 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Personaje from "../components/Personaje"; // ✅ Importa el componente
 import { Image } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -84,6 +83,12 @@ export default function PantallaBienvenida({ navigation }) {
   const handleJugar = () => {
     navigation.replace("Secciones");
   };
+  
+  useEffect(() => {
+  const parent = navigation.getParent();
+  parent?.setOptions({ tabBarStyle: { display: 'none' } });
+  return () => parent?.setOptions({ tabBarStyle: undefined });
+}, [navigation]);
 
   return (
     <View style={styles.contenedor}>
@@ -133,20 +138,18 @@ export default function PantallaBienvenida({ navigation }) {
       <Animated.View style={[styles.centro, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
 
         {/* MASCOTA */}
-        <Animated.View style={{ transform: [{ translateY: bounceAnim }] }}>
-          <Personaje
-            tipo="mono"
-            tamanio={100}
-            animar={true}
-            mensaje="¡Bienvenido!"
-            estilo={styles.mascotaPersonaje}
+        <Animated.View style={[styles.mascotaContenedor, { transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] }]}> 
+          <Image
+            source={require("../assets/imagenes/chef2.png")}
+            style={styles.mascotaImagen}
+            resizeMode="contain"
           />
         </Animated.View>
 
         {/* TÍTULO */}
         <View style={styles.cajaTitle}>
-          <Text style={styles.titulo}>COMIDA</Text>
-          <Text style={styles.tituloDestacado}>DIVERTIDA</Text>
+          <Text style={styles.titulo}>CHEF</Text>
+          <Text style={styles.tituloDestacado}>SLUDABLE</Text>
         </View>
 
         {/* BOTÓN JUGAR */}
@@ -263,8 +266,16 @@ const styles = StyleSheet.create({
     flex: 1,
     zIndex: 10,
   },
-  mascotaPersonaje: {
-    marginBottom: 5,
+  mascotaContenedor: {
+    width: 320,
+    height: 360,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  mascotaImagen: {
+    width: 320,
+    height: 360,
   },
 
   // TÍTULO — texto blanco sobre fondo oscuro

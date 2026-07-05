@@ -22,12 +22,57 @@ const ALTURA_ZONA_PLATO = height * 0.38;
 export default function JuegoPlatoSaludable({ route, navigation }) {
   const { nivelId } = route.params;
   const nivel = NIVELES.find((n) => n.id === nivelId);
-  const items = useMemo(() => mezclar(nivel.alimentos).slice(0, 6), [nivelId]);
+  const items = useMemo(() => {
+    // Construir pool global a partir de todos los niveles para disponer de más imágenes
+    const todos = NIVELES.flatMap((n) => n.alimentos || []);
+
+    // Deduplicar por nombre (por si algún nivel repite la misma imagen)
+    const mapa = new Map();
+    todos.forEach((a) => {
+      if (!mapa.has(a.nombre)) mapa.set(a.nombre, a);
+    });
+    const unicaLista = Array.from(mapa.values());
+
+    const saludables = mezclar(unicaLista.filter((a) => a.saludable));
+    const noSaludables = mezclar(unicaLista.filter((a) => !a.saludable));
+
+    const RONDAS_DESEADAS = 10;
+    const rondas = Math.min(RONDAS_DESEADAS, saludables.length, noSaludables.length);
+
+    if (rondas > 0) {
+      const seleccionSaludables = saludables.slice(0, rondas);
+      const seleccionNoSaludables = noSaludables.slice(0, rondas);
+      const pares = seleccionSaludables.map((saludable, index) => {
+        const noSaludable = seleccionNoSaludables[index];
+        return Math.random() > 0.5 ? [saludable, noSaludable] : [noSaludable, saludable];
+      });
+      return mezclar(pares).flat();
+    }
+
+    // Si no hay suficientes elementos en el pool global, regresar al nivel actual (fallback)
+    return mezclar(nivel.alimentos).slice(0, 6);
+  }, [nivelId]);
 
   const posiciones = useRef(items.map(() => new Animated.ValueXY())).current;
   const [colocados, setColocados] = useState(() => items.map(() => false));
   const [revisado, setRevisado] = useState(false);
   const [estrellas, setEstrellas] = useState(0);
+  const [currentPairIndex, setCurrentPairIndex] = useState(0);
+  const [aciertos, setAciertos] = useState(0);
+  const [fallos, setFallos] = useState(0);
+  const [juegoFinalizado, setJuegoFinalizado] = useState(false);
+  const pairIndices = useMemo(
+    () => Array.from({ length: Math.ceil(items.length / 2) }, (_, i) => [i * 2, i * 2 + 1]),
+    [items.length]
+  );
+
+  const visiblePairItems = useMemo(() => {
+    if (juegoFinalizado) return [];
+    const indices = pairIndices[currentPairIndex] || [];
+    return indices
+      .map((index) => ({ item: items[index], index }))
+      .filter(({ item }) => item);
+  }, [items, currentPairIndex, pairIndices, juegoFinalizado]);
   const [mensaje, setMensaje] = useState("");
   const [platoEmoji, setPlatoEmoji] = useState("🍽️");
   const [gano, setGano] = useState(false);
@@ -75,7 +120,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
     }, 1500);
   };
 
-  // ✅ Animación de aceptación
+  // Animación de aceptación
   const animarAceptacion = () => {
     setPlatoEmoji("😊");
     reproducirAcierto();
@@ -84,9 +129,23 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
     }, 1000);
   };
 
+  const avanzarPar = () => {
+    setCurrentPairIndex((prev) => {
+      if (prev < pairIndices.length - 1) {
+        const next = prev + 1;
+        if (next >= pairIndices.length - 1) {
+          setJuegoFinalizado(true);
+        }
+        return next;
+      }
+      setJuegoFinalizado(true);
+      return prev;
+    });
+  };
+
   function crearPanResponder(indice) {
     return PanResponder.create({
-      onStartShouldSetPanResponder: () => !colocados[indice] && !revisado && !juegoTerminado,
+      onStartShouldSetPanResponder: () => !colocados[indice] && !revisado && !juegoFinalizado && currentPairIndex === Math.floor(indice / 2),
       onPanResponderMove: Animated.event(
         [null, { dx: posiciones[indice].x, dy: posiciones[indice].y }],
         { useNativeDriver: false }
@@ -97,23 +156,26 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
           const item = items[indice];
 
           if (!item.saludable) {
+            setFallos((prev) => prev + 1);
+            setColocados((prev) => prev.map((v, i) => (i === indice ? true : v)));
             animarRechazo();
-            setMensaje("😅 ¡Ups! Esa no es saludable");
+            setMensaje(`😢 Fallo: ${item.nombre} no es saludable.`);
             Animated.spring(posiciones[indice], {
               toValue: { x: 0, y: 0 },
               useNativeDriver: false,
-            }).start();
+            }).start(() => avanzarPar());
             return;
           }
 
           setColocados((prev) => prev.map((v, i) => (i === indice ? true : v)));
+          setAciertos((prev) => prev + 1);
           animarAceptacion();
           setMensaje("✅ ¡Bien hecho! Es saludable");
 
           Animated.spring(posiciones[indice], {
             toValue: { x: gesto.dx, y: gesto.dy },
             useNativeDriver: false,
-          }).start();
+          }).start(() => avanzarPar());
         } else {
           Animated.spring(posiciones[indice], {
             toValue: { x: 0, y: 0 },
@@ -124,40 +186,43 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
     });
   }
 
-  const panResponders = useRef(items.map((_, i) => crearPanResponder(i))).current;
+  const panResponders = useMemo(
+    () => items.map((_, i) => crearPanResponder(i)),
+    [items, currentPairIndex, colocados, revisado, juegoTerminado]
+  );
 
   async function confirmarPlato() {
-    if (revisado || juegoTerminado) return;
+    if (revisado) return;
 
-    const totalColocados = colocados.filter(Boolean).length;
+    const totalSeleccionados = aciertos + fallos;
+    const puedeConfirmar = juegoFinalizado && totalSeleccionados > 0;
 
-    if (totalColocados === 0) {
-      setMensaje("🍽️ ¡Arrastra al menos un alimento saludable!");
+    if (!puedeConfirmar) {
+      setMensaje("🍽️ Completa todas las rondas para ver tu resultado.");
       return;
     }
 
     setRevisado(true);
-    const totalSaludables = items.filter((i) => i.saludable).length;
-    const colocadosSaludables = items.filter((item, i) => colocados[i] && item.saludable).length;
-    const puntaje = colocadosSaludables;
+    const puntaje = aciertos;
+    const totalIncorrectos = fallos;
 
     setPuntajeFinal(puntaje);
-    setTotalSaludablesFinal(totalSaludables);
+    setTotalSaludablesFinal(totalSeleccionados);
 
-    if (puntaje > 0) {
+ if (puntaje > 0) {
       reproducirAcierto();
-      setMensaje("🎉 ¡Excelente plato saludable!");
+      setMensaje("🎉 ¡Perfecto! Todas las elecciones fueron saludables.");
       setGano(true);
       setConfeti(true);
     } else {
       reproducirFallo();
-      setMensaje("💪 ¡Casi! Pon solo los saludables");
+      setMensaje("💪 Terminado: no seleccionaste alimentos saludables.");
       setGano(false);
     }
 
     await sumarEstrellas(puntaje);
     setEstrellas(puntaje);
-    await guardarProgresoNivel(nivelId, puntaje, totalSaludables);
+    await guardarProgresoNivel(nivelId, puntaje, totalRondas);
     await registrarPartidaJugada();
 
     // Navegar a PantallaResultados después de 1.8 segundos
@@ -168,13 +233,17 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
         navigation.replace('PantallaResultados', {
           nivelId,
           aciertos: puntaje,
-          total: totalSaludables,
+          total: totalRondas,
+          fallidos: totalIncorrectos,
         });
       }
     }, 1800);
   }
 
-  const totalColocados = colocados.filter(Boolean).length;
+  const totalColocados = aciertos + fallos;
+  const totalRondas = pairIndices.length;
+  const totalSeleccionados = aciertos + fallos;
+  const puedeConfirmar = juegoFinalizado && !revisado && totalSeleccionados > 0;
 
   return (
     <LinearGradient
@@ -214,7 +283,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
       {/* CONTADOR */}
       <View style={styles.contadorContainer}>
         <LinearGradient colors={["rgba(255,255,255,0.25)", "rgba(255,255,255,0.1)"]} style={styles.contadorGrad}>
-          <Text style={styles.contadorTexto}>🍽️ {totalColocados} en el plato</Text>
+          <Text style={styles.contadorTexto}>Ronda {Math.min(currentPairIndex + 1, totalRondas)} / {totalRondas} · ⚠️ {fallos} fallos</Text>
         </LinearGradient>
       </View>
 
@@ -254,36 +323,32 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
       <View style={styles.bandejaContainer}>
         <Text style={styles.bandejaLabel}>👇 Toca y arrastra al plato</Text>
         <View style={styles.bandejaAlimentos}>
-          {items.map((item, i) => (
+          {visiblePairItems.map(({ item, index }) => (
             <Animated.View
               key={item.nombre}
-              {...panResponders[i].panHandlers}
+              {...panResponders[index].panHandlers}
               style={[
                 styles.itemArrastrable,
-                colocados[i] && styles.itemColocado,
-                colocados[i] && revisado
-                  ? item.saludable ? styles.itemCorrecto : styles.itemIncorrecto
-                  : null,
-                { transform: posiciones[i].getTranslateTransform() },
+                { transform: posiciones[index].getTranslateTransform() },
               ]}
             >
-              <ImagenAlimento fuente={item.imagen} tamanio={60} animar={true} />
+              <ImagenAlimento
+                fuente={item.imagen}
+                tamanio={item.nombre === 'FRESA' || item.nombre === 'DONA' ? 100 : 90}
+                animar={true}
+              />
               <Text style={styles.nombreItem}>{item.nombre}</Text>
-              {colocados[i] && !revisado && (
-                <View style={styles.colocadoBadge}><Text style={styles.colocadoTexto}>✓</Text></View>
-              )}
             </Animated.View>
           ))}
         </View>
       </View>
 
       {/* BOTÓN CONFIRMAR */}
-      {!revisado && !juegoTerminado && (
+      {!revisado && !juegoTerminado && puedeConfirmar && (
         <TouchableOpacity
-          style={[styles.botonWrapper, { opacity: totalColocados === 0 ? 0.5 : 1 }]}
+          style={styles.botonWrapper}
           onPress={confirmarPlato}
           activeOpacity={0.85}
-          disabled={totalColocados === 0}
         >
           <LinearGradient
             colors={["#5ae128dd", "#7ce56ce4"]}
@@ -308,23 +373,23 @@ const styles = StyleSheet.create({
   circulo3: { position: "absolute", top: "30%", right: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(255,255,255,0.05)" },
   circulo4: { position: "absolute", bottom: "20%", left: -30, width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(255,215,0,0.08)" },
 
-  barraSuperior: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  barraSuperior: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   botonVolver: { backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 20, padding: 10, paddingHorizontal: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
   textoVolver: { fontSize: 24, color: "#fff", fontWeight: "900" },
   titulo: { fontSize: 17, fontWeight: "900", color: "#fff", flex: 1, textAlign: "center", textShadowColor: "rgba(0,0,0,0.2)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
   estrellasBadge: { backgroundColor: "rgba(224, 224, 223, 0.59)", borderRadius: 20, paddingVertical: 6, paddingHorizontal: 14, borderWidth: 1, borderColor: "rgba(255,215,0,0.15)" },
   estrellas: { fontSize: 16, fontWeight: "900", color: "#FFD700" },
 
-  cajaInstruccion: { borderRadius: 24, marginBottom: 6, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  cajaInstruccion: { borderRadius: 24, marginBottom: 10, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
   instruccionGrad: { paddingVertical: 12, paddingHorizontal: 20, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 10 },
   instruccionEmoji: { fontSize: 26 },
   instruccion: { fontSize: 17, fontWeight: "800", color: "#fff", textAlign: "center" },
 
-  contadorContainer: { alignItems: "center", marginVertical: 3 },
-  contadorGrad: { paddingHorizontal: 20, paddingVertical: 5, borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
-  contadorTexto: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  contadorContainer: { alignItems: "center", marginVertical: 10 },
+  contadorGrad: { paddingHorizontal: 22, paddingVertical: 8, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
+  contadorTexto: { fontSize: 15, fontWeight: "900", color: "#fff" },
 
-  zonaPlato: { height: height * 0.24, alignItems: "center", justifyContent: "center" },
+  zonaPlato: { height: height * 0.20, alignItems: "center", justifyContent: "center" },
   platoWrapper: { elevation: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12 },
   plato: {
     width: 170,
@@ -343,42 +408,44 @@ const styles = StyleSheet.create({
   mensajeFallo: { backgroundColor: "#FF8A65" },
   mensajeTexto: { fontSize: 15, fontWeight: "900", color: "#fff" },
 
-  bandejaContainer: { flex: 1 },
-  bandejaLabel: { textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: "700", marginBottom: 3 },
-  bandejaAlimentos: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
+  bandejaContainer: { marginTop: 10, paddingBottom: 8, flexShrink: 0 },
+  bandejaLabel: { textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: "700", marginBottom: 8 },
+  bandejaAlimentos: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", alignContent: "flex-start" },
 
   itemArrastrable: {
-    width: 75,
-    height: 95,
-    borderRadius: 18,
+    width: '44%',
+    minWidth: 120,
+    height: 160,
+    borderRadius: 22,
     backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
-    margin: 6,
-    elevation: 8,
+    marginBottom: 10,
+    marginHorizontal: '1%',
+    paddingVertical: 8,
+    elevation: 6,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    borderWidth: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.4)",
     position: "relative",
-    paddingVertical: 6,
   },
   itemColocado: { borderColor: "#FFD93D", backgroundColor: "rgba(255,255,255,0.9)" },
   itemCorrecto: { backgroundColor: "#C8E6C9", borderColor: "#4CAF50", borderWidth: 4 },
   itemIncorrecto: { backgroundColor: "#FFCCBC", borderColor: "#FF8A65", borderWidth: 4 },
 
   nombreItem: {
-    fontSize: 10,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "800",
     color: "#2E7D32",
     textAlign: "center",
-    marginTop: 3,
-    backgroundColor: "rgba(255,255,255,0.6)",
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 8,
+    marginTop: 6,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
 
   colocadoBadge: {

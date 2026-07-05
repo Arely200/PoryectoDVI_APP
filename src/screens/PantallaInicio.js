@@ -57,7 +57,9 @@ export default function PantallaInicio({ navigation }) {
 
       <Animated.View style={[styles.contenido, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.header}>
-          <Personaje tipo="mono" tamanio={60} mensaje={`¡Hola${nombre ? `, ${nombre}` : ", Campeón"}!`} />
+          <View style={styles.personajeContainer}>
+            <Personaje imagen={require("../assets/imagenes/chef2.png")} tamanio={140} circulo={false} mensaje={`¡Hola${nombre ? `, ${nombre}` : ", Campeón"}!`} />
+          </View>
           <Text style={styles.subSaludo}>¿Qué quieres jugar hoy?</Text>
         </View>
 
@@ -96,8 +98,8 @@ const styles = StyleSheet.create({
   circulo2: { position: "absolute", bottom: -80, left: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: "rgba(255,255,255,0.06)" },
   circulo3: { position: "absolute", top: "50%", left: -50, width: 150, height: 150, borderRadius: 75, backgroundColor: "rgba(255,255,255,0.04)" },
   contenido: { flex: 1, paddingTop: 40, paddingHorizontal: 16 },
-  header: { alignItems: "center", marginBottom: 16 },
-  subSaludo: { fontSize: 18, color: "rgba(255,255,255,0.9)", fontWeight: "600", marginTop: 2 },
+  header: { alignItems: "center", marginBottom: 8, paddingTop: 16 },
+  subSaludo: { fontSize: 18, color: "rgba(255,255,255,0.9)", fontWeight: "600", marginTop: 6 },
   cajaNombre: { backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 28, padding: 20, marginBottom: 16, alignItems: "center", elevation: 10 },
   preguntaNombre: { fontSize: 22, fontWeight: "700", color: "#2E7D32", marginBottom: 12 },
   input: { width: "100%", borderWidth: 3, borderColor: "#4CAF50", borderRadius: 18, padding: 14, fontSize: 20, backgroundColor: "#fff", textAlign: "center" },
@@ -111,4 +113,5 @@ const styles = StyleSheet.create({
   cardEmoji: { fontSize: 54 },
   cardTitulo: { fontSize: 19, fontWeight: "900", color: "#fff", textAlign: "center", textShadowColor: "rgba(0,0,0,0.2)", textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
   cardSubtitulo: { fontSize: 13, color: "rgba(255,255,255,0.85)", textAlign: "center", marginTop: 4, fontWeight: "600" },
+  personajeContainer: { marginTop: 4, marginBottom: 10, alignItems: "center" },
 });

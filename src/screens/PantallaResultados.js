@@ -78,7 +78,7 @@ export default function PantallaResultados({ route, navigation }) {
 
             {/* EMOJI GRANDE */}
             <Text style={st.emoji}>
-              {gano ? '🏆' : perdido ? '😢' : '💪'}
+              {gano ? '🏆' : perdido ? '😊' : '💪'}
             </Text>
 
             {/* TÍTULO */}

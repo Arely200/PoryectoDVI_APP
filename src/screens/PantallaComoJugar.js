@@ -1,6 +1,6 @@
 // src/screens/PantallaComoJugar.js
 import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 const PASOS = [
@@ -72,7 +72,7 @@ export default function PantallaComoJugar({ navigation }) {
           ))}
         </View>
 
-        {/* BURBUJA DEL MONO */}
+        {/* BURBUJA DEL CHEF */}
         <View style={styles.burbujaContainer}>
           <LinearGradient
             colors={["#88f4ce", "#62ec95"]}
@@ -80,7 +80,7 @@ export default function PantallaComoJugar({ navigation }) {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.mono}>🐒</Text>
+            <Image source={require("../assets/imagenes/chef2.png")} style={styles.chefImage} resizeMode="contain" />
             <View style={styles.burbujaTexto}>
               <Text style={styles.burbujaTextoGrande}>¡Tú puedes hacerlo!</Text>
               <Text style={styles.burbujaTextoChico}>Sigue los pasos y diviértete</Text>
@@ -88,22 +88,7 @@ export default function PantallaComoJugar({ navigation }) {
           </LinearGradient>
         </View>
 
-        {/* BOTÓN JUGAR */}
-        <TouchableOpacity
-          style={styles.boton}
-          onPress={() => navigation.navigate("Secciones")}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={["#03eb16ef", "#09f5fdf5"]}
-            style={styles.botonGradiente}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            <Text style={styles.botonTexto}>¡A JUGAR!</Text>
-            <Text style={styles.botonFlecha}>→</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        {/* Botón de inicio eliminado para simplificar la pantalla */}
       </ScrollView>
     </LinearGradient>
   );
@@ -290,7 +275,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     gap: 12,
   },
-  mono: { fontSize: 44 },
+  chefImage: { width: 80, height: 80, borderRadius: 40, marginRight: 16 },
   burbujaTexto: {
     flex: 1,
   },
