@@ -148,7 +148,7 @@ function AlimentoItem({ alimento, onSoltar, juegoTerminado, onDragChange }) {
   );
 }
 
-// ─── Pantalla principal ───
+//Pantalla principal
 export default function JuegoCanastas({ route, navigation }) {
   const nivelId = route?.params?.nivelId ?? 1;
 
@@ -249,7 +249,7 @@ export default function JuegoCanastas({ route, navigation }) {
     return () => clearInterval(intervalo);
   }, [juegoActivo, juegoTerminado]);
 
-  // ── Terminar juego ──
+  // Terminar juego 
   async function terminarJuego() {
     if (terminadoRef.current) return;
     terminadoRef.current = true;
@@ -315,7 +315,7 @@ export default function JuegoCanastas({ route, navigation }) {
     });
   };
 
-  // ========== FUNCIONES PARA EL RESUMEN ==========
+  //FUNCIONES PARA EL RESUMEN
   const irSiguienteNivel = () => {
     const sig = nivelId + 1;
     const niveles = {

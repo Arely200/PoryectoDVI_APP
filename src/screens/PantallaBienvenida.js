@@ -93,13 +93,13 @@ export default function PantallaBienvenida({ navigation }) {
   return (
     <View style={styles.contenedor}>
 
-      {/* ── FONDO BASE ── */}
+      {/* FONDO BAS*/}
       <LinearGradient
         colors={["#14c8bf", "#107b7d", "#0d142b"]}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* ── GLOWS ── */}
+      {/* GLOWS */}
       <View style={[styles.glow, styles.glow1]} />
       <View style={[styles.glow, styles.glow2]} />
       <View style={[styles.glow, styles.glow3]} />
@@ -107,7 +107,7 @@ export default function PantallaBienvenida({ navigation }) {
       {/* ── ESTRELLAS ── */}
       {STARS.map((s) => <StarDot key={s.id} {...s} />)}
 
-      {/* ── CÍRCULOS DECORATIVOS ── */}
+      {/* CÍRCULOS DECORATIVOS */}
       <View style={styles.fondoDecoracion}>
         <View style={styles.circulo1} />
         <View style={styles.circulo2} />
@@ -134,7 +134,7 @@ export default function PantallaBienvenida({ navigation }) {
         ))}
       </View>
 
-      {/* ── CONTENIDO CENTRAL ── */}
+      {/*CONTENIDO CENTRAL */}
       <Animated.View style={[styles.centro, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
 
         {/* MASCOTA */}

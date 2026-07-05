@@ -102,7 +102,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
     ).start();
   }, []);
 
-  // ✅ Animación de rechazo
+  // Animación de rechazo
   const animarRechazo = () => {
     setPlatoEmoji("😢");
     reproducirFallo();
@@ -225,7 +225,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
     await guardarProgresoNivel(nivelId, puntaje, totalRondas);
     await registrarPartidaJugada();
 
-    // Navegar a PantallaResultados después de 1.8 segundos
+    // Navegar a PantallaResultados
     setTimeout(() => {
       if (!yaNavego.current) {
         yaNavego.current = true;

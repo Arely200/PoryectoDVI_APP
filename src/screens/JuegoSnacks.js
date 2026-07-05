@@ -12,7 +12,7 @@ export default function JuegoSnacks({ route, navigation }) {
   const { nivelId } = route.params;
   const nivel = NIVELES.find((n) => n.id === nivelId);
 
-  // ========== VALIDACIÓN: Datos del nivel ==========
+  //VALIDACIÓN: Datos del nivel
   if (!nivel || !nivel.alimentos || nivel.alimentos.length === 0) {
     return (
       <LinearGradient colors={["#4CAF50", "#FFD93D"]} style={styles.contenedor}>
@@ -83,7 +83,7 @@ export default function JuegoSnacks({ route, navigation }) {
     ]).start();
   }
 
-  // ========== MENSAJES MOTIVADORES ==========
+  // MENSAJES MOTIVADORES 
   const mensajesMotivadores = [
     "¡No pasa nada! Sigue así 💪",
     "¡Casi! Tú puedes 🌟",
@@ -119,9 +119,9 @@ export default function JuegoSnacks({ route, navigation }) {
       if (indice + 1 < preguntas.length) {
         setIndice((i) => i + 1);
       } else {
-        // ========== COMPLETÓ EL JUEGO ==========
+        // COMPLETÓ EL JUEGO
         setJuegoTerminado(true);
-        // ✅ Calcular los valores finales correctamente
+        // Calcular los valores finales correctamente
         const totalAciertos = aciertos + (esCorrecto ? 1 : 0);
         const totalFallos = fallos + (esCorrecto ? 0 : 1);
         
@@ -133,12 +133,12 @@ export default function JuegoSnacks({ route, navigation }) {
         setTimeout(() => {
           if (!yaNavego.current) {
             yaNavego.current = true;
-            // ✅ ENVIAR TODOS LOS DATOS CORRECTAMENTE
+            // ENVIAR TODOS LOS DATOS CORRECTAMENTE
             navigation.replace('PantallaResultados', {
               nivelId,
               aciertos: totalAciertos,
               total: preguntas.length,
-              fallidos: totalFallos,  // ✅ ENVÍA LOS FALLOS
+              fallidos: totalFallos,  //ENVÍA LOS FALLOS
               perdido: false,
             });
           }
@@ -147,7 +147,7 @@ export default function JuegoSnacks({ route, navigation }) {
     }, 1200);
   }
 
-  // ========== OBTENER MENSAJE DEL MONO ==========
+  //OBTENER MENSAJE DEL PERSONAJE 
   function getMensajeMono() {
     if (juegoTerminado) return "¡Eres increíble! 🌟";
     if (feedback === "acierto") return "¡Excelente! 🌟";
@@ -179,12 +179,12 @@ export default function JuegoSnacks({ route, navigation }) {
         </View>
       </View>
 
-      {/* ========== BARRA DE PROGRESO ========== */}
+      {/* ARRA DE PROGRESO  */}
       <View style={styles.barraProgresoFondo}>
         <View style={[styles.barraProgresoFill, { width: `${progreso}%` }]} />
       </View>
       
-      {/* ========== CONTADOR DE ACIERTOS Y FALLOS ========== */}
+      {/* CONTADOR DE ACIERTOS Y FALLOS */}
       <View style={styles.contadorContainer}>
         <Text style={styles.contadorTexto}>
           ✅ Aciertos: {aciertos}  ❌ Fallos: {fallos}
@@ -192,7 +192,7 @@ export default function JuegoSnacks({ route, navigation }) {
         <Text style={styles.contadorPreguntas}>{indice + 1} / {preguntas.length}</Text>
       </View>
 
-      {/* ========== TARJETA CON IMAGEN ========== */}
+      {/* TARJETA CON IMAGEN */}
       <Animated.View style={[
         styles.tarjeta,
         { transform: [{ scale: scaleAnim }, { translateX: shakeAnim }] },
@@ -203,12 +203,12 @@ export default function JuegoSnacks({ route, navigation }) {
         <Text style={styles.nombreComida}>{preguntaActual.nombre}</Text>
       </Animated.View>
 
-      {/* ========== PREGUNTA ========== */}
+      {/* PREGUNTA*/}
       <View style={styles.cajaPregunta}>
         <Text style={styles.textoPregunta}>¿Es SALUDABLE o CHATARRA?</Text>
       </View>
 
-      {/* ========== BOTONES ========== */}
+      {/* BOTONES */}
       <View style={styles.filaBotones}>
         <TouchableOpacity
           style={[styles.boton, styles.botonSaludable]}
@@ -241,7 +241,7 @@ export default function JuegoSnacks({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* ========== FEEDBACK ========== */}
+      {/* FEEDBACK */}
       {feedback && (
         <View style={[styles.feedbackBox, feedback === "acierto" ? styles.feedbackOk : styles.feedbackMal]}>
           <Text style={styles.feedbackTexto}>

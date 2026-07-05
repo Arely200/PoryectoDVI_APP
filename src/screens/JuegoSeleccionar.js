@@ -16,7 +16,7 @@ export default function JuegoSeleccionar({ route, navigation }) {
   const mensajeAnim = useRef(new Animated.Value(0)).current;
   const yaNavego = useRef(false);
 
-  // ========== VALIDACIÓN: Datos del nivel ==========
+  //VALIDACIÓN: Datos del nivel 
   if (!nivel || !nivel.alimentos || nivel.alimentos.length === 0) {
     return (
       <LinearGradient colors={["#4CAF50", "#FFD93D"]} style={styles.contenedor}>
@@ -87,7 +87,7 @@ export default function JuegoSeleccionar({ route, navigation }) {
     if (seleccionados.includes(item.nombre) || errores.includes(item.nombre)) return;
 
     if (item.saludable) {
-      // ========== ACIERTO ==========
+      //ACIERTO 
       const nuevosSeleccionados = [...seleccionados, item.nombre];
       setSeleccionados(nuevosSeleccionados);
       setEstrellas(nuevosSeleccionados.length);
@@ -118,14 +118,14 @@ export default function JuegoSeleccionar({ route, navigation }) {
         }, 1500);
       }
     } else {
-      // ========== ERROR ==========
+      //ERROR
       const nuevosErrores = [...errores, item.nombre];
       setErrores(nuevosErrores);
       const fallos = intentosFallidos + 1;
       setIntentosFallidos(fallos);
       reproducirFallo();
       
-      // Mensajes motivadores para niños (sin decir "perdiste")
+      // Mensajes motivadores despues de haber sacado una mala 
       const mensajes = [
         "¡Ups! Esa no es saludable, ¡sigue intentando! 💪",
         "¡Casi! Esa no es, ¡tú puedes! 🌟",
@@ -171,7 +171,7 @@ export default function JuegoSeleccionar({ route, navigation }) {
         </View>
       </View>
 
-      {/* ========== MOSTRAR INTENTOS FALLIDOS ========== */}
+      {/* MOSTRAR INTENTOS FALLIDOS*/}
       <View style={styles.vidasContainer}>
         <Text style={styles.vidasTexto}>
           ✅ Aciertos: {seleccionados.length}  ❌ Fallos: {intentosFallidos}
