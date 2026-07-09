@@ -1,5 +1,5 @@
 // src/screens/JuegoPlatoSaludable.js
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,11 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { NIVELES, mezclar } from "../data/niveles";
 import { sumarEstrellas, guardarProgresoNivel, registrarPartidaJugada } from "../utils/almacenamiento";
-import { reproducirAcierto, reproducirFallo, reproducirVictoria } from "../utils/sonidos";
+import {
+  reproducirAcierto, reproducirFallo, reproducirVictoria,
+  vozInicioPlato, vozPlatoBien, vozPlatoMal, vozDerrota, sonidoFondo,
+  detenerSonidosActuales,
+} from "../utils/sonidos";
 import ImagenAlimento from "../components/ImagenAlimento";
 import Confeti from "../components/Confeti";
 
@@ -23,10 +27,8 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
   const { nivelId } = route.params;
   const nivel = NIVELES.find((n) => n.id === nivelId);
   const items = useMemo(() => {
-    // Construir pool global a partir de todos los niveles para disponer de más imágenes
     const todos = NIVELES.flatMap((n) => n.alimentos || []);
 
-    // Deduplicar por nombre (por si algún nivel repite la misma imagen)
     const mapa = new Map();
     todos.forEach((a) => {
       if (!mapa.has(a.nombre)) mapa.set(a.nombre, a);
@@ -49,7 +51,6 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
       return mezclar(pares).flat();
     }
 
-    // Si no hay suficientes elementos en el pool global, regresar al nivel actual (fallback)
     return mezclar(nivel.alimentos).slice(0, 6);
   }, [nivelId]);
 
@@ -73,7 +74,6 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
       .map((index) => ({ item: items[index], index }))
       .filter(({ item }) => item);
   }, [items, currentPairIndex, pairIndices, juegoFinalizado]);
-  const [mensaje, setMensaje] = useState("");
   const [platoEmoji, setPlatoEmoji] = useState("🍽️");
   const [gano, setGano] = useState(false);
   const [confeti, setConfeti] = useState(false);
@@ -85,8 +85,11 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
   const shakePlato = useRef(new Animated.Value(0)).current;
   const floatAnim = useRef(new Animated.Value(0)).current;
   const yaNavego = useRef(false);
+  const timerRef = useRef(null);
+  const timeoutRef = useRef(null);
 
-  React.useEffect(() => {
+  // ── Animaciones existentes ──
+  useEffect(() => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(platoPulse, { toValue: 1.06, duration: 900, useNativeDriver: true }),
@@ -102,10 +105,50 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
     ).start();
   }, []);
 
+  // ── Voz de inicio con control de volumen ──
+  useEffect(() => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        if (sonidoFondo) {
+          await sonidoFondo.setVolumeAsync(0.08);
+        }
+        await vozInicioPlato();
+        timeoutRef.current = setTimeout(() => {
+          if (sonidoFondo) {
+            sonidoFondo.setVolumeAsync(0.5);
+          }
+        }, 4000);
+      } catch (error) {
+        console.log('Error en voz de inicio:', error);
+      }
+    }, 500);
+
+    return () => {
+      detenerSonidosActuales();
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    };
+  }, []);
+
+  // ── Limpiar al salir de la pantalla ──
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      detenerSonidosActuales();
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   // Animación de rechazo
   const animarRechazo = () => {
     setPlatoEmoji("😢");
-    reproducirFallo();
+    try { reproducirFallo(); } catch (e) {}
+    try { vozPlatoMal(); } catch (e) {}
 
     Animated.sequence([
       Animated.timing(shakePlato, { toValue: 15, duration: 60, useNativeDriver: true }),
@@ -123,7 +166,8 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
   // Animación de aceptación
   const animarAceptacion = () => {
     setPlatoEmoji("😊");
-    reproducirAcierto();
+    try { reproducirAcierto(); } catch (e) {}
+    try { vozPlatoBien(); } catch (e) {}
     setTimeout(() => {
       setPlatoEmoji("🍽️");
     }, 1000);
@@ -159,7 +203,6 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
             setFallos((prev) => prev + 1);
             setColocados((prev) => prev.map((v, i) => (i === indice ? true : v)));
             animarRechazo();
-            setMensaje(`😢 Fallo: ${item.nombre} no es saludable.`);
             Animated.spring(posiciones[indice], {
               toValue: { x: 0, y: 0 },
               useNativeDriver: false,
@@ -170,7 +213,6 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
           setColocados((prev) => prev.map((v, i) => (i === indice ? true : v)));
           setAciertos((prev) => prev + 1);
           animarAceptacion();
-          setMensaje("✅ ¡Bien hecho! Es saludable");
 
           Animated.spring(posiciones[indice], {
             toValue: { x: gesto.dx, y: gesto.dy },
@@ -198,25 +240,25 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
     const puedeConfirmar = juegoFinalizado && totalSeleccionados > 0;
 
     if (!puedeConfirmar) {
-      setMensaje("🍽️ Completa todas las rondas para ver tu resultado.");
       return;
     }
 
     setRevisado(true);
     const puntaje = aciertos;
     const totalIncorrectos = fallos;
+    const totalRondas = pairIndices.length;
 
     setPuntajeFinal(puntaje);
     setTotalSaludablesFinal(totalSeleccionados);
 
- if (puntaje > 0) {
-      reproducirAcierto();
-      setMensaje("🎉 ¡Perfecto! Todas las elecciones fueron saludables.");
+    if (puntaje > 0) {
+      try { reproducirAcierto(); } catch (e) {}
+      try { reproducirVictoria(); } catch (e) {}
       setGano(true);
       setConfeti(true);
     } else {
-      reproducirFallo();
-      setMensaje("💪 Terminado: no seleccionaste alimentos saludables.");
+      try { reproducirFallo(); } catch (e) {}
+      try { vozDerrota(); } catch (e) {}
       setGano(false);
     }
 
@@ -225,20 +267,29 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
     await guardarProgresoNivel(nivelId, puntaje, totalRondas);
     await registrarPartidaJugada();
 
-    // Navegar a PantallaResultados
     setTimeout(() => {
       if (!yaNavego.current) {
         yaNavego.current = true;
+        detenerSonidosActuales();
         setJuegoTerminado(true);
         navigation.replace('PantallaResultados', {
           nivelId,
           aciertos: puntaje,
           total: totalRondas,
           fallidos: totalIncorrectos,
+          perdido: puntaje === 0,  // ← CORREGIDO: Ahora envía 'perdido'
         });
       }
     }, 1800);
   }
+
+  const handleVolver = () => {
+    detenerSonidosActuales();
+    if (sonidoFondo) {
+      sonidoFondo.setVolumeAsync(0.5);
+    }
+    navigation.navigate("Secciones");
+  };
 
   const totalColocados = aciertos + fallos;
   const totalRondas = pairIndices.length;
@@ -263,7 +314,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
 
       {/* HEADER */}
       <View style={styles.barraSuperior}>
-        <TouchableOpacity onPress={() => navigation.navigate("Secciones")} style={styles.botonVolver}>
+        <TouchableOpacity onPress={handleVolver} style={styles.botonVolver}>
           <Text style={styles.textoVolver}>←</Text>
         </TouchableOpacity>
         <Text style={styles.titulo}>{nivel.titulo}</Text>
@@ -283,7 +334,7 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
       {/* CONTADOR */}
       <View style={styles.contadorContainer}>
         <LinearGradient colors={["rgba(255,255,255,0.25)", "rgba(255,255,255,0.1)"]} style={styles.contadorGrad}>
-          <Text style={styles.contadorTexto}>Ronda {Math.min(currentPairIndex + 1, totalRondas)} / {totalRondas} · ⚠️ {fallos} fallos</Text>
+          <Text style={styles.contadorTexto}>Ronda {Math.min(currentPairIndex + 1, totalRondas)} / {totalRondas} ·  {fallos} fallos</Text>
         </LinearGradient>
       </View>
 
@@ -312,16 +363,9 @@ export default function JuegoPlatoSaludable({ route, navigation }) {
         </Animated.View>
       </View>
 
-      {/* MENSAJE */}
-      {mensaje ? (
-        <View style={[styles.mensajeBox, mensaje.includes("Excelente") || mensaje.includes("Bien") ? styles.mensajeOk : styles.mensajeFallo]}>
-          <Text style={styles.mensajeTexto}>{mensaje}</Text>
-        </View>
-      ) : null}
-
       {/* BANDEJA DE ALIMENTOS */}
       <View style={styles.bandejaContainer}>
-        <Text style={styles.bandejaLabel}>👇 Toca y arrastra al plato</Text>
+        <Text style={styles.bandejaLabel}> Toca y arrastra al plato</Text>
         <View style={styles.bandejaAlimentos}>
           {visiblePairItems.map(({ item, index }) => (
             <Animated.View
@@ -402,11 +446,6 @@ const styles = StyleSheet.create({
   },
   emojiPlato: { fontSize: 55 },
   textoPlato: { fontSize: 15, fontWeight: "900", color: "#2E7D32", marginTop: 3 },
-
-  mensajeBox: { borderRadius: 24, paddingVertical: 8, paddingHorizontal: 16, alignItems: "center", marginBottom: 4, elevation: 6, borderWidth: 3, borderColor: "#fff" },
-  mensajeOk: { backgroundColor: "#4CAF50" },
-  mensajeFallo: { backgroundColor: "#FF8A65" },
-  mensajeTexto: { fontSize: 15, fontWeight: "900", color: "#fff" },
 
   bandejaContainer: { marginTop: 10, paddingBottom: 8, flexShrink: 0 },
   bandejaLabel: { textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: "700", marginBottom: 8 },

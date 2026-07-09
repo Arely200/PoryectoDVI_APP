@@ -5,6 +5,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { leerNombre, guardarNombre } from "../utils/almacenamiento";
 import Personaje from "../components/Personaje";
+import { vozNiveles, sonidoFondo, detenerSonidosActuales } from "../utils/sonidos";
 
 const { width } = Dimensions.get("window");
   
@@ -20,6 +21,8 @@ export default function PantallaInicio({ navigation }) {
   const [pidiendoNombre, setPidiendoNombre] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const timerRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     Animated.parallel([
@@ -27,6 +30,44 @@ export default function PantallaInicio({ navigation }) {
       Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
     ]).start();
   }, []);
+
+  // ── Voz de niveles ──
+  useEffect(() => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        if (sonidoFondo) {
+          await sonidoFondo.setVolumeAsync(0.08);
+        }
+        await vozNiveles();
+        timeoutRef.current = setTimeout(() => {
+          if (sonidoFondo) {
+            sonidoFondo.setVolumeAsync(0.5);
+          }
+        }, 4000);
+      } catch (error) {
+        console.log('Error en voz de niveles:', error);
+        if (sonidoFondo) {
+          sonidoFondo.setVolumeAsync(0.5);
+        }
+      }
+    }, 800);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  // ── Limpiar al salir de la pantalla ──
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      detenerSonidosActuales();
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -43,6 +84,11 @@ export default function PantallaInicio({ navigation }) {
       const nombreFinal = nombre.trim() || "Amigo";
       await guardarNombre(nombreFinal);
       setPidiendoNombre(false);
+    }
+    // Detener sonidos antes de navegar
+    detenerSonidosActuales();
+    if (sonidoFondo) {
+      sonidoFondo.setVolumeAsync(0.5);
     }
     navigation.navigate(seccion.pantalla, { nivelId: seccion.id });
   }

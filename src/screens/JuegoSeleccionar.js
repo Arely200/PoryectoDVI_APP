@@ -4,7 +4,11 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView, Image }
 import { LinearGradient } from "expo-linear-gradient";
 import { NIVELES, mezclar } from "../data/niveles";
 import { sumarEstrellas, guardarProgresoNivel, registrarPartidaJugada } from "../utils/almacenamiento";
-import { reproducirAcierto, reproducirFallo, reproducirVictoria } from "../utils/sonidos";
+import {
+  reproducirAcierto, reproducirFallo, reproducirVictoria,
+  vozSelBien, vozSelMal, vozInicioBebidas, vozDerrota, sonidoFondo,
+  detenerSonidosActuales,
+} from "../utils/sonidos";
 import ImagenAlimento from "../components/ImagenAlimento";
 import Confeti from "../components/Confeti";
 
@@ -13,8 +17,9 @@ export default function JuegoSeleccionar({ route, navigation }) {
   const nivel = NIVELES.find((n) => n.id === nivelId);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const mensajeAnim = useRef(new Animated.Value(0)).current;
   const yaNavego = useRef(false);
+  const timerRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   //VALIDACIÓN: Datos del nivel 
   if (!nivel || !nivel.alimentos || nivel.alimentos.length === 0) {
@@ -35,6 +40,7 @@ export default function JuegoSeleccionar({ route, navigation }) {
     );
   }
 
+  // ── Animación de pulso ──
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -44,42 +50,82 @@ export default function JuegoSeleccionar({ route, navigation }) {
     ).start();
   }, []);
 
+  // ── Voz de inicio con control de volumen ──
+  useEffect(() => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        if (sonidoFondo) {
+          await sonidoFondo.setVolumeAsync(0.08);
+        }
+        await vozInicioBebidas();
+        timeoutRef.current = setTimeout(() => {
+          if (sonidoFondo) {
+            sonidoFondo.setVolumeAsync(0.5);
+          }
+        }, 4000);
+      } catch (error) {
+        console.log('Error en voz de inicio:', error);
+        if (sonidoFondo) {
+          sonidoFondo.setVolumeAsync(0.5);
+        }
+      }
+    }, 500);
+
+    return () => {
+      detenerSonidosActuales();
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    };
+  }, []);
+
+  // ── Limpiar al salir de la pantalla ──
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      detenerSonidosActuales();
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const items = useMemo(() => mezclar(nivel.alimentos), [nivelId]);
   const [seleccionados, setSeleccionados] = useState([]);
   const [errores, setErrores] = useState([]);
   const [juegoTerminado, setJuegoTerminado] = useState(false);
   const [estrellas, setEstrellas] = useState(0);
-  const [mensajeAbajo, setMensajeAbajo] = useState(null);
-  const [mensajeEmoji, setMensajeEmoji] = useState("");
-  const [mostrarMensaje, setMostrarMensaje] = useState(false);
   const [confeti, setConfeti] = useState(false);
   const [intentosFallidos, setIntentosFallidos] = useState(0);
 
   const saludables = items.filter(i => i.saludable);
   const totalSaludables = saludables.length;
 
-  const mostrarMensajeAbajo = (emoji, texto) => {
-    setMensajeEmoji(emoji);
-    setMensajeAbajo(texto);
-    setMostrarMensaje(true);
-    mensajeAnim.setValue(0);
-    Animated.spring(mensajeAnim, {
-      toValue: 1,
-      tension: 50,
-      friction: 7,
-      useNativeDriver: true,
-    }).start();
+  // ── Función para bajar y subir volumen al reproducir voces ──
+  const bajarVolumen = async () => {
+    try {
+      if (sonidoFondo) {
+        await sonidoFondo.setVolumeAsync(0.08);
+      }
+    } catch (e) {}
+  };
 
-    setTimeout(() => {
-      Animated.timing(mensajeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setMostrarMensaje(false);
-        setMensajeAbajo(null);
-      });
-    }, 1800);
+  const subirVolumen = async () => {
+    try {
+      if (sonidoFondo) {
+        await sonidoFondo.setVolumeAsync(0.5);
+      }
+    } catch (e) {}
+  };
+
+  const handleVolver = () => {
+    detenerSonidosActuales();
+    if (sonidoFondo) {
+      sonidoFondo.setVolumeAsync(0.5);
+    }
+    navigation.navigate("Secciones");
   };
 
   function handleSeleccion(item) {
@@ -87,12 +133,15 @@ export default function JuegoSeleccionar({ route, navigation }) {
     if (seleccionados.includes(item.nombre) || errores.includes(item.nombre)) return;
 
     if (item.saludable) {
-      //ACIERTO 
+      // ✅ ACIERTO 
       const nuevosSeleccionados = [...seleccionados, item.nombre];
       setSeleccionados(nuevosSeleccionados);
       setEstrellas(nuevosSeleccionados.length);
-      reproducirAcierto();
-      mostrarMensajeAbajo("✅", "¡Bien hecho! Es saludable");
+      
+      bajarVolumen();
+      try { reproducirAcierto(); } catch (e) {}
+      try { vozSelBien(); } catch (e) {}
+      setTimeout(() => subirVolumen(), 2000);
       
       if (nuevosSeleccionados.length === totalSaludables) {
         setJuegoTerminado(true);
@@ -101,12 +150,15 @@ export default function JuegoSeleccionar({ route, navigation }) {
         sumarEstrellas(puntaje);
         guardarProgresoNivel(nivelId, puntaje, totalSaludables);
         registrarPartidaJugada();
-        reproducirVictoria();
+        bajarVolumen();
+        try { reproducirVictoria(); } catch (e) {}
         setConfeti(true);
+        setTimeout(() => subirVolumen(), 3000);
         
         setTimeout(() => {
           if (!yaNavego.current) {
             yaNavego.current = true;
+            detenerSonidosActuales();
             navigation.replace('PantallaResultados', {
               nivelId,
               aciertos: puntaje,
@@ -118,23 +170,16 @@ export default function JuegoSeleccionar({ route, navigation }) {
         }, 1500);
       }
     } else {
-      //ERROR
+      // ❌ ERROR
       const nuevosErrores = [...errores, item.nombre];
       setErrores(nuevosErrores);
       const fallos = intentosFallidos + 1;
       setIntentosFallidos(fallos);
-      reproducirFallo();
       
-      // Mensajes motivadores despues de haber sacado una mala 
-      const mensajes = [
-        "¡Ups! Esa no es saludable, ¡sigue intentando! 💪",
-        "¡Casi! Esa no es, ¡tú puedes! 🌟",
-        "¡No pasa nada! Intenta con otra 😊",
-        "¡Sigue buscando la saludable! 🔍",
-        "¡Ánimo! La siguiente será la buena ✨",
-      ];
-      const mensajeAleatorio = mensajes[Math.floor(Math.random() * mensajes.length)];
-      mostrarMensajeAbajo("", mensajeAleatorio);
+      bajarVolumen();
+      try { reproducirFallo(); } catch (e) {}
+      try { vozSelMal(); } catch (e) {} // ← Usa voz_sel_mal_1 y voz_sel_mal_2
+      setTimeout(() => subirVolumen(), 2000);
     }
   }
 
@@ -162,7 +207,7 @@ export default function JuegoSeleccionar({ route, navigation }) {
       </View>
 
       <View style={styles.barraSuperior}>
-        <TouchableOpacity onPress={() => navigation.navigate("Secciones")} style={styles.botonVolver}>
+        <TouchableOpacity onPress={handleVolver} style={styles.botonVolver}>
           <Text style={styles.textoVolver}>←</Text>
         </TouchableOpacity>
         <Text style={styles.titulo}>{nivel.titulo}</Text>
@@ -171,16 +216,15 @@ export default function JuegoSeleccionar({ route, navigation }) {
         </View>
       </View>
 
-      {/* MOSTRAR INTENTOS FALLIDOS*/}
       <View style={styles.vidasContainer}>
         <Text style={styles.vidasTexto}>
-          ✅ Aciertos: {seleccionados.length}  ❌ Fallos: {intentosFallidos}
+          Aciertos: {seleccionados.length}   Fallos: {intentosFallidos}
         </Text>
       </View>
 
       <View style={styles.cajaInstruccion}>
         <Text style={styles.instruccion}>
-          {juegoTerminado ? "🎉 ¡Completado!" : "👆 Toca las bebidas saludables"}
+          {juegoTerminado ? "🎉 ¡Completado!" : " Toca las bebidas saludables"}
         </Text>
       </View>
 
@@ -225,29 +269,11 @@ export default function JuegoSeleccionar({ route, navigation }) {
           <Text style={styles.textoBurbuja}>
             {juegoTerminado ? "¡Eres increíble! 🌟" : 
              intentosFallidos > 3 ? "¡Sigue intentando, tú puedes! 💪" :
-             intentosFallidos > 0 ? "¡Muy bien! Sigue así 💪" : 
-             "¡Toca las saludables! 👆"}
+             intentosFallidos > 0 ? "¡Muy bien! Sigue así " : 
+             "¡Toca las saludables! "}
           </Text>
         </View>
       </View>
-
-      {mostrarMensaje && mensajeAbajo && (
-        <Animated.View style={[
-          styles.mensajeAbajo,
-          {
-            opacity: mensajeAnim,
-            transform: [{ scale: mensajeAnim }],
-          }
-        ]}>
-          <LinearGradient 
-            colors={mensajeEmoji === "✅" ? ["#4CAF50", "#2E7D32"] : ["#FF8A65", "#E64A19"]}
-            style={styles.mensajeAbajoFondo}
-          >
-            <Text style={styles.mensajeAbajoEmoji}>{mensajeEmoji}</Text>
-            <Text style={styles.mensajeAbajoTexto}>{mensajeAbajo}</Text>
-          </LinearGradient>
-        </Animated.View>
-      )}
     </LinearGradient>
   );
 }
@@ -340,35 +366,4 @@ const styles = StyleSheet.create({
   emojiMono: { fontSize: 40 },
   burbujaMono: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 16, paddingVertical: 8, paddingHorizontal: 16 },
   textoBurbuja: { fontSize: 16, fontWeight: "700", color: "#fff" },
-
-  mensajeAbajo: {
-    position: "absolute",
-    bottom: 30,
-    alignSelf: "center",
-    zIndex: 20,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    width: "90%",
-  },
-  mensajeAbajoFondo: {
-    borderRadius: 30,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "rgba(255,255,255,0.5)",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 12,
-  },
-  mensajeAbajoEmoji: { fontSize: 32 },
-  mensajeAbajoTexto: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: "#fff",
-    textAlign: "center",
-  },
 });

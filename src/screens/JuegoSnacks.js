@@ -4,7 +4,11 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, Image } from "react
 import { LinearGradient } from "expo-linear-gradient";
 import { NIVELES, mezclar } from "../data/niveles";
 import { sumarEstrellas, guardarProgresoNivel, registrarPartidaJugada } from "../utils/almacenamiento";
-import { reproducirAcierto, reproducirFallo, reproducirVictoria } from "../utils/sonidos";
+import {
+  reproducirAcierto, reproducirFallo, reproducirVictoria,
+  vozAcierto, vozFalloSnacks, vozInicioSnacks, vozDerrota, sonidoFondo,
+  detenerSonidosActuales,
+} from "../utils/sonidos";
 import ImagenAlimento from "../components/ImagenAlimento";
 import Confeti from "../components/Confeti";
 
@@ -41,15 +45,19 @@ export default function JuegoSnacks({ route, navigation }) {
   const [bloqueado, setBloqueado] = useState(false);
   const [confeti, setConfeti] = useState(false);
   const [juegoTerminado, setJuegoTerminado] = useState(false);
+  const [juegoActivo, setJuegoActivo] = useState(false);
 
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const floatAnim = useRef(new Animated.Value(0)).current;
   const yaNavego = useRef(false);
+  const timerRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   const preguntaActual = preguntas[indice];
   const progreso = ((indice) / preguntas.length) * 100;
 
+  // ── Animaciones ──
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -66,6 +74,47 @@ export default function JuegoSnacks({ route, navigation }) {
       ])
     ).start();
   }, []);
+
+  // ── Voz de inicio con control de volumen ──
+  useEffect(() => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        if (sonidoFondo) {
+          await sonidoFondo.setVolumeAsync(0.08);
+        }
+        await vozInicioSnacks();
+        timeoutRef.current = setTimeout(() => {
+          if (sonidoFondo) {
+            sonidoFondo.setVolumeAsync(0.5);
+          }
+        }, 4000);
+        setJuegoActivo(true);
+      } catch (error) {
+        console.log('Error en voz de inicio:', error);
+        setJuegoActivo(true);
+      }
+    }, 500);
+
+    return () => {
+      detenerSonidosActuales();
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    };
+  }, []);
+
+  // ── Limpiar al salir de la pantalla ──
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      detenerSonidosActuales();
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   function animarAcierto() {
     Animated.sequence([
@@ -93,21 +142,23 @@ export default function JuegoSnacks({ route, navigation }) {
   ];
 
   async function responder(eligioSaludable) {
-    if (bloqueado || juegoTerminado) return;
+    if (bloqueado || juegoTerminado || !juegoActivo) return;
     setBloqueado(true);
 
     const esCorrecto = eligioSaludable === preguntaActual.saludable;
 
     if (esCorrecto) {
       setFeedback("acierto");
-      reproducirAcierto();
+      try { reproducirAcierto(); } catch (e) {}
+      try { vozAcierto(); } catch (e) {}
       animarAcierto();
       setAciertos((a) => a + 1);
       await sumarEstrellas(1);
       setEstrellas((e) => e + 1);
     } else {
       setFeedback("fallo");
-      reproducirFallo();
+      try { reproducirFallo(); } catch (e) {}
+      try { vozFalloSnacks(); } catch (e) {}
       animarFallo();
       setFallos((f) => f + 1);
     }
@@ -119,26 +170,29 @@ export default function JuegoSnacks({ route, navigation }) {
       if (indice + 1 < preguntas.length) {
         setIndice((i) => i + 1);
       } else {
-        // COMPLETÓ EL JUEGO
         setJuegoTerminado(true);
-        // Calcular los valores finales correctamente
         const totalAciertos = aciertos + (esCorrecto ? 1 : 0);
         const totalFallos = fallos + (esCorrecto ? 0 : 1);
         
         await guardarProgresoNivel(nivelId, totalAciertos, preguntas.length);
         await registrarPartidaJugada();
-        reproducirVictoria();
-        setConfeti(true);
+        
+        if (totalAciertos > totalFallos) {
+          try { reproducirVictoria(); } catch (e) {}
+          setConfeti(true);
+        } else {
+          try { vozDerrota(); } catch (e) {}
+        }
         
         setTimeout(() => {
           if (!yaNavego.current) {
             yaNavego.current = true;
-            // ENVIAR TODOS LOS DATOS CORRECTAMENTE
+            detenerSonidosActuales();
             navigation.replace('PantallaResultados', {
               nivelId,
               aciertos: totalAciertos,
               total: preguntas.length,
-              fallidos: totalFallos,  //ENVÍA LOS FALLOS
+              fallidos: totalFallos,
               perdido: false,
             });
           }
@@ -155,6 +209,14 @@ export default function JuegoSnacks({ route, navigation }) {
     return "¡Piénsalo bien! 🤔";
   }
 
+  const handleVolver = () => {
+    detenerSonidosActuales();
+    if (sonidoFondo) {
+      sonidoFondo.setVolumeAsync(0.5);
+    }
+    navigation.navigate("Secciones");
+  };
+
   return (
     <LinearGradient
       colors={["#14c8bf", "#107b7d", "#0d142b"]}
@@ -170,7 +232,10 @@ export default function JuegoSnacks({ route, navigation }) {
       </View>
 
       <View style={styles.barraSuperior}>
-        <TouchableOpacity onPress={() => navigation.navigate("Secciones")} style={styles.botonVolver}>
+        <TouchableOpacity 
+          onPress={handleVolver}
+          style={styles.botonVolver}
+        >
           <Text style={styles.flecha}>←</Text>
         </TouchableOpacity>
         <Text style={styles.tituloNivel}>Nivel {nivelId}: {nivel.titulo}</Text>
@@ -179,20 +244,17 @@ export default function JuegoSnacks({ route, navigation }) {
         </View>
       </View>
 
-      {/* ARRA DE PROGRESO  */}
       <View style={styles.barraProgresoFondo}>
         <View style={[styles.barraProgresoFill, { width: `${progreso}%` }]} />
       </View>
       
-      {/* CONTADOR DE ACIERTOS Y FALLOS */}
       <View style={styles.contadorContainer}>
         <Text style={styles.contadorTexto}>
-          ✅ Aciertos: {aciertos}  ❌ Fallos: {fallos}
+           Aciertos: {aciertos}   Fallos: {fallos}
         </Text>
         <Text style={styles.contadorPreguntas}>{indice + 1} / {preguntas.length}</Text>
       </View>
 
-      {/* TARJETA CON IMAGEN */}
       <Animated.View style={[
         styles.tarjeta,
         { transform: [{ scale: scaleAnim }, { translateX: shakeAnim }] },
@@ -203,17 +265,15 @@ export default function JuegoSnacks({ route, navigation }) {
         <Text style={styles.nombreComida}>{preguntaActual.nombre}</Text>
       </Animated.View>
 
-      {/* PREGUNTA*/}
       <View style={styles.cajaPregunta}>
-        <Text style={styles.textoPregunta}>¿Es SALUDABLE o CHATARRA?</Text>
+        <Text style={styles.textoPregunta}>¿Es SALUDABLE O CHATARRA?</Text>
       </View>
 
-      {/* BOTONES */}
       <View style={styles.filaBotones}>
         <TouchableOpacity
           style={[styles.boton, styles.botonSaludable]}
           onPress={() => responder(true)}
-          disabled={bloqueado || juegoTerminado}
+          disabled={bloqueado || juegoTerminado || !juegoActivo}
           activeOpacity={0.8}
         >
           <LinearGradient
@@ -228,7 +288,7 @@ export default function JuegoSnacks({ route, navigation }) {
         <TouchableOpacity
           style={[styles.boton, styles.botonChatarra]}
           onPress={() => responder(false)}
-          disabled={bloqueado || juegoTerminado}
+          disabled={bloqueado || juegoTerminado || !juegoActivo}
           activeOpacity={0.8}
         >
           <LinearGradient
@@ -241,7 +301,6 @@ export default function JuegoSnacks({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* FEEDBACK */}
       {feedback && (
         <View style={[styles.feedbackBox, feedback === "acierto" ? styles.feedbackOk : styles.feedbackMal]}>
           <Text style={styles.feedbackTexto}>
@@ -250,7 +309,6 @@ export default function JuegoSnacks({ route, navigation }) {
         </View>
       )}
 
-      {/* ======*/}
       <View style={styles.filaMono}>
         <Image source={require("../assets/imagenes/chef2.png")} style={styles.chefImage} resizeMode="contain" />
         <View style={styles.burbujaMono}>
@@ -262,10 +320,7 @@ export default function JuegoSnacks({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  // Contenedor principal de la pantalla
   contenedor: { flex: 1, paddingTop: 40, paddingHorizontal: 16, paddingBottom: 20 },
-  
-  // Estilos para la pantalla de error si el nivel no carga
   errorContainer: { 
     flex: 1, 
     justifyContent: "center", 
@@ -277,8 +332,6 @@ const styles = StyleSheet.create({
   errorSubtitulo: { fontSize: 16, color: "rgba(255,255,255,0.8)", textAlign: "center", marginBottom: 30 },
   errorBoton: { backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 20, paddingVertical: 12, paddingHorizontal: 24 },
   errorBotonTexto: { fontSize: 18, fontWeight: "700", color: "#fff" },
-
-  // Fondos decorativos en la pantalla
   fondoDecoracion: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" },
   circulo1: {
     position: "absolute",
@@ -298,22 +351,17 @@ const styles = StyleSheet.create({
     borderRadius: 75,
     backgroundColor: "rgba(255,255,255,0.08)",
   },
-  // Barra superior con botón atrás, título y estrellas
   barraSuperior: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   botonVolver: { backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 15, paddingVertical: 8, paddingHorizontal: 15 },
   flecha: { fontSize: 24, color: "#fff", fontWeight: "900" },
   tituloNivel: { fontSize: 20, fontWeight: "800", color: "#fff", flex: 1, textAlign: "center" },
   estrellasBadge: { backgroundColor: "rgba(255,215,0,0.3)", borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12 },
   estrellas: { fontSize: 16, fontWeight: "900", color: "#FFD700" },
-  
   barraProgresoFondo: { height: 8, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 6, overflow: "hidden", marginBottom: 4 },
   barraProgresoFill: { height: "100%", backgroundColor: "#80ff00", borderRadius: 6 },
-  
   contadorContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   contadorTexto: { fontSize: 14, color: "#fff", fontWeight: "700" },
   contadorPreguntas: { fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: "700" },
-  
-  // Tarjeta principal que muestra la comida y la pregunta
   tarjeta: {
     backgroundColor: "rgba(255, 252, 252, 0.95)",
     borderRadius: 40,
@@ -338,10 +386,8 @@ const styles = StyleSheet.create({
     height: 180,
   },
   nombreComida: { fontSize: 28, fontWeight: "900", color: "#023f5e", marginTop: 15 },
-  // Caja que contiene la pregunta del juego
   cajaPregunta: { backgroundColor: "rgba(255,255,255,0.9)", borderRadius: 18, paddingVertical: 17, alignItems: "center", marginBottom: 20 },
   textoPregunta: { fontSize: 20, fontWeight: "900", color: "#023f5e" },
-  // Fila de botones saludables / chatarras
   filaBotones: { flexDirection: "row", justifyContent: "space-between", gap: 12, marginTop: -5, marginBottom: 20 },
   boton: { flex: 1, borderRadius: 20, overflow: "hidden", elevation: 8 },
   botonGradiente: { paddingVertical: 18, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 10 },
@@ -349,12 +395,10 @@ const styles = StyleSheet.create({
   botonChatarra: { shadowColor: "#912020", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
   botonEmoji: { fontSize: 32 },
   botonTexto: { fontSize: 18, fontWeight: "900", color: "#fff" },
-  feedbackBox: { borderRadius: 20, paddingVertical: 12
-    , alignItems: "center", marginBottom: 10, borderWidth: 2, borderColor: "#fff" },
+  feedbackBox: { borderRadius: 20, paddingVertical: 12, alignItems: "center", marginBottom: 10, borderWidth: 2, borderColor: "#fff" },
   feedbackOk: { backgroundColor: "#4CAF50" },
   feedbackMal: { backgroundColor: "#FF8A65" },
   feedbackTexto: { fontSize: 20, fontWeight: "900", color: "#fff" },
-  // Barra del chef con mensaje motivador
   filaMono: {
     flexDirection: "row",
     alignItems: "center",
@@ -377,7 +421,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 6,
   },
-
   textoBurbuja: {
     fontSize: 18,
     fontWeight: "900",

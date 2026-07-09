@@ -4,10 +4,15 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from "
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "react-native";
 
-const { width, height } = Dimensions.get("window");
-const AnimatedImage = Animated.createAnimatedComponent(Image);
+import { 
+  vozBienvenida, 
+  sonidoFondo,
+  iniciarMusicaFondo,
+  detenerSonidosActuales,
+} from "../utils/sonidos";
 
-// Estrellas generadas una sola vez
+const { width, height } = Dimensions.get("window");
+
 const STARS = Array.from({ length: 28 }, (_, i) => ({
   id: i,
   top: Math.random() * height,
@@ -44,28 +49,31 @@ function StarDot({ top, left, size, duration, delay }) {
 
 export default function PantallaBienvenida({ navigation }) {
   const bounceAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim   = useRef(new Animated.Value(0)).current;
+  const scaleAnim  = useRef(new Animated.Value(0.8)).current;
+  const pulseAnim  = useRef(new Animated.Value(1)).current;
   const floatAnims = useRef([0, 1, 2, 3, 4, 5].map(() => new Animated.Value(0))).current;
+  const timerRef = useRef(null);
+  const timeoutRef = useRef(null);
 
+  // ── Animaciones visuales ──
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 700, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, tension: 60, friction: 7, useNativeDriver: true }),
     ]).start();
 
     Animated.loop(
       Animated.sequence([
         Animated.timing(bounceAnim, { toValue: -20, duration: 900, useNativeDriver: true }),
-        Animated.timing(bounceAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
+        Animated.timing(bounceAnim, { toValue: 0,   duration: 900, useNativeDriver: true }),
       ])
     ).start();
 
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.08, duration: 700, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 700, useNativeDriver: true }),
       ])
     ).start();
 
@@ -74,26 +82,99 @@ export default function PantallaBienvenida({ navigation }) {
         Animated.sequence([
           Animated.delay(i * 400),
           Animated.timing(anim, { toValue: -18, duration: 1400, useNativeDriver: true }),
-          Animated.timing(anim, { toValue: 0, duration: 1400, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0,   duration: 1400, useNativeDriver: true }),
         ])
       ).start();
     });
   }, []);
 
+  // ── Iniciar música al montar ──
+  useEffect(() => {
+    const iniciarMusica = async () => {
+      try {
+        await iniciarMusicaFondo();
+      } catch (error) {
+        console.log("Error iniciando música:", error);
+      }
+    };
+    iniciarMusica();
+
+    return () => {
+      // Limpiar timeouts
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  // ── Voz de bienvenida con control de volumen ──
+  useEffect(() => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        // 1. Bajar música al mínimo
+        if (sonidoFondo) {
+          await sonidoFondo.setVolumeAsync(0.05);
+        }
+        
+        // 2. Reproducir voz
+        await vozBienvenida();
+        
+        // 3. Restaurar música después de la voz
+        timeoutRef.current = setTimeout(async () => {
+          if (sonidoFondo) {
+            await sonidoFondo.setVolumeAsync(0.5);
+          }
+        }, 4500);
+        
+      } catch (error) {
+        console.log("Error en voz de bienvenida:", error);
+        // Si hay error, restaurar música igual
+        setTimeout(async () => {
+          if (sonidoFondo) {
+            await sonidoFondo.setVolumeAsync(0.5);
+          }
+        }, 2000);
+      }
+    }, 900);
+    
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  // ── Limpiar al salir de la pantalla ──
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      // Detener cualquier sonido en reproducción
+      detenerSonidosActuales();
+      // Restaurar volumen
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // ── Ocultar tab bar ──
+  useEffect(() => {
+    const parent = navigation.getParent();
+    parent?.setOptions({ tabBarStyle: { display: 'none' } });
+    return () => parent?.setOptions({ tabBarStyle: undefined });
+  }, [navigation]);
+
   const handleJugar = () => {
+    // Detener sonidos y restaurar volumen antes de navegar
+    detenerSonidosActuales();
+    if (sonidoFondo) {
+      sonidoFondo.setVolumeAsync(0.5);
+    }
     navigation.replace("Secciones");
   };
-  
-  useEffect(() => {
-  const parent = navigation.getParent();
-  parent?.setOptions({ tabBarStyle: { display: 'none' } });
-  return () => parent?.setOptions({ tabBarStyle: undefined });
-}, [navigation]);
 
   return (
     <View style={styles.contenedor}>
 
-      {/* FONDO BAS*/}
+      {/* FONDO */}
       <LinearGradient
         colors={["#14c8bf", "#107b7d", "#0d142b"]}
         style={StyleSheet.absoluteFill}
@@ -104,7 +185,7 @@ export default function PantallaBienvenida({ navigation }) {
       <View style={[styles.glow, styles.glow2]} />
       <View style={[styles.glow, styles.glow3]} />
 
-      {/* ── ESTRELLAS ── */}
+      {/* ESTRELLAS */}
       {STARS.map((s) => <StarDot key={s.id} {...s} />)}
 
       {/* CÍRCULOS DECORATIVOS */}
@@ -115,7 +196,7 @@ export default function PantallaBienvenida({ navigation }) {
         <View style={styles.circulo4} />
       </View>
 
-      {/* ── EMOTICONES FLOTANTES ── */}
+      {/* EMOTICONES FLOTANTES */}
       <View style={styles.flotantesContainer}>
         {[
           [floatAnims[0], styles.flotante1, "🍎"],
@@ -134,11 +215,11 @@ export default function PantallaBienvenida({ navigation }) {
         ))}
       </View>
 
-      {/*CONTENIDO CENTRAL */}
+      {/* CONTENIDO CENTRAL */}
       <Animated.View style={[styles.centro, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
 
         {/* MASCOTA */}
-        <Animated.View style={[styles.mascotaContenedor, { transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] }]}> 
+        <Animated.View style={[styles.mascotaContenedor, { transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] }]}>
           <Image
             source={require("../assets/imagenes/chef2.png")}
             style={styles.mascotaImagen}
@@ -148,8 +229,8 @@ export default function PantallaBienvenida({ navigation }) {
 
         {/* TÍTULO */}
         <View style={styles.cajaTitle}>
-          <Text style={styles.titulo}>CHEF</Text>
-          <Text style={styles.tituloDestacado}>SLUDABLE</Text>
+          <Text style={styles.titulo}>COME</Text>
+          <Text style={styles.tituloDestacado}>SALUDABLE</Text>
         </View>
 
         {/* BOTÓN JUGAR */}
@@ -186,80 +267,34 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  // GLOWS
-  glow: {
-    position: "absolute",
-    borderRadius: 999,
-  },
-  glow1: {
-    width: 280, height: 280,
-    top: -80, left: -60,
-    backgroundColor: "#fb9494",  // rojo tomate
-    opacity: 0.25,
-  },
-  glow2: {
-    width: 240, height: 240,
-    bottom: -60, right: -50,
-    backgroundColor: "#fdd122",  // amarillo maíz
-    opacity: 0.25,
-  },
-  glow3: {
-    width: 160, height: 160,
-    top: "38%", left: "28%",
-    backgroundColor: "#0eed2c",  // verde brócoli
-    opacity: 0.15,
-  },
+  glow: { position: "absolute", borderRadius: 999 },
+  glow1: { width: 280, height: 280, top: -80,   left: -60,  backgroundColor: "#fb9494", opacity: 0.25 },
+  glow2: { width: 240, height: 240, bottom: -60, right: -50, backgroundColor: "#fdd122", opacity: 0.25 },
+  glow3: { width: 160, height: 160, top: "38%",  left: "28%",backgroundColor: "#0eed2c", opacity: 0.15 },
 
-  // CÍRCULOS DECORATIVOS (ahora con tono blanco sobre fondo oscuro)
   fondoDecoracion: {
     position: "absolute",
     top: 0, left: 0, right: 0, bottom: 0,
     overflow: "hidden",
   },
-  circulo1: {
-    position: "absolute",
-    top: -80, right: -80,
-    width: 280, height: 280, borderRadius: 140,
-    backgroundColor: "rgba(255,255,255,0.05)",
-  },
-  circulo2: {
-    position: "absolute",
-    bottom: -60, left: -60,
-    width: 220, height: 220, borderRadius: 110,
-    backgroundColor: "rgba(255,255,255,0.04)",
-  },
-  circulo3: {
-    position: "absolute",
-    top: "30%", right: -40,
-    width: 140, height: 140, borderRadius: 70,
-    backgroundColor: "rgba(255,255,255,0.03)",
-  },
-  circulo4: {
-    position: "absolute",
-    bottom: "20%", left: -30,
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: "rgba(0,229,160,0.08)",
-  },
+  circulo1: { position: "absolute", top: -80,      right: -80, width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(255,255,255,0.05)" },
+  circulo2: { position: "absolute", bottom: -60,   left: -60,  width: 220, height: 220, borderRadius: 110, backgroundColor: "rgba(255,255,255,0.04)" },
+  circulo3: { position: "absolute", top: "30%",    right: -40, width: 140, height: 140, borderRadius: 70,  backgroundColor: "rgba(255,255,255,0.03)" },
+  circulo4: { position: "absolute", bottom: "20%", left: -30,  width: 100, height: 100, borderRadius: 50,  backgroundColor: "rgba(0,229,160,0.08)"   },
 
-  // FLOTANTES
   flotantesContainer: {
     position: "absolute",
     top: 0, left: 0, right: 0, bottom: 0,
     zIndex: 1,
   },
-  flotante: {
-    position: "absolute",
-    fontSize: 40,
-    opacity: 0.75,
-  },
-  flotante1: { top: 30, left: 20 },
-  flotante2: { top: 80, right: 20 },
-  flotante3: { top: 150, left: -10 },
-  flotante4: { top: 200, right: -10 },
-  flotante5: { bottom: 130, left: 10 },
-  flotante6: { bottom: 80, right: 10 },
+  flotante:  { position: "absolute", fontSize: 40, opacity: 0.75 },
+  flotante1: { top: 30,       left: 20   },
+  flotante2: { top: 80,       right: 20  },
+  flotante3: { top: 150,      left: -10  },
+  flotante4: { top: 200,      right: -10 },
+  flotante5: { bottom: 130,   left: 10   },
+  flotante6: { bottom: 80,    right: 10  },
 
-  // CENTRO
   centro: {
     alignItems: "center",
     justifyContent: "center",
@@ -278,7 +313,6 @@ const styles = StyleSheet.create({
     height: 360,
   },
 
-  // TÍTULO — texto blanco sobre fondo oscuro
   cajaTitle: {
     backgroundColor: "rgba(255,255,255,0.10)",
     borderRadius: 30,
@@ -290,7 +324,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,229,160,0.35)",
   },
   titulo: {
-    fontFamily: "Fredoka-700bold",
     fontSize: 44,
     fontWeight: "900",
     color: "#ffffff",
@@ -303,7 +336,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // BOTÓN (sin cambios, ya te gustaba)
   boton: {
     borderRadius: 70,
     overflow: "hidden",
@@ -323,7 +355,6 @@ const styles = StyleSheet.create({
     color: "#1B5E20",
   },
 
-  // ESTRELLAS
   estrellitas: {
     flexDirection: "row",
     gap: 10,

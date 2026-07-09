@@ -2,13 +2,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Image,
-  Animated, Dimensions, Vibration, PanResponder,
-  TouchableOpacity,
+  Animated, Dimensions, Vibration, PanResponder, TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Confeti from '../components/Confeti';
 import {
   reproducirAcierto, reproducirFallo, reproducirVictoria,
+  vozAcierto, vozFallo, vozEscapo,
+  vozInicioCanastas, vozDerrota, sonidoFondo,
+  detenerSonidosActuales,
 } from '../utils/sonidos';
 import { guardarProgresoNivel, sumarEstrellas, registrarPartidaJugada } from '../utils/almacenamiento';
 import { guardarNivelCompletado } from '../utils/premios';
@@ -56,23 +58,16 @@ function mezclar(arr) {
 function AlimentoItem({ alimento, onSoltar, juegoTerminado, onDragChange }) {
   const pan    = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const escala = useRef(new Animated.Value(1)).current;
-  const alimentosGrandes = [
-    'Plátano',
-    'Fresa',
-    'Aguacate',
-    'Dona',
-    'Hamburguesa',
-    'Pizza',
-    'Brócoli',
-  ];
+
+  const alimentosGrandes = ['Plátano', 'Fresa', 'Aguacate', 'Dona', 'Hamburguesa', 'Pizza', 'Brócoli'];
   const itemSize = alimentosGrandes.includes(alimento.nombre) ? 118 : 108;
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder:             () => !juegoTerminado,
-      onStartShouldSetPanResponderCapture:      () => !juegoTerminado,
-      onMoveShouldSetPanResponder:              () => !juegoTerminado,
-      onMoveShouldSetPanResponderCapture:       () => !juegoTerminado,
+      onStartShouldSetPanResponder:        () => !juegoTerminado,
+      onStartShouldSetPanResponderCapture: () => !juegoTerminado,
+      onMoveShouldSetPanResponder:         () => !juegoTerminado,
+      onMoveShouldSetPanResponderCapture:  () => !juegoTerminado,
 
       onPanResponderGrant: () => {
         onDragChange(alimento.id, true);
@@ -115,7 +110,7 @@ function AlimentoItem({ alimento, onSoltar, juegoTerminado, onDragChange }) {
         }
       },
 
-      onPanResponderTerminate: (_, gestureState) => {
+      onPanResponderTerminate: () => {
         pan.flattenOffset();
         onDragChange(alimento.id, false);
         Animated.spring(escala, { toValue: 1, friction: 4, useNativeDriver: false }).start();
@@ -141,21 +136,25 @@ function AlimentoItem({ alimento, onSoltar, juegoTerminado, onDragChange }) {
       ]}
     >
       <View style={s.itemWrapper}>
-        <Image source={alimento.imagen} style={[s.imgItem, { width: itemSize, height: itemSize }]} resizeMode="contain" />
+        <Image
+          source={alimento.imagen}
+          style={[s.imgItem, { width: itemSize, height: itemSize }]}
+          resizeMode="contain"
+        />
         <Text style={s.nombreItem}>{alimento.nombre}</Text>
       </View>
     </Animated.View>
   );
 }
 
-//Pantalla principal
+// ─── Pantalla principal ───
 export default function JuegoCanastas({ route, navigation }) {
   const nivelId = route?.params?.nivelId ?? 1;
 
   const [puntuacion,     setPuntuacion]     = useState(0);
   const [vidas,          setVidas]          = useState(3);
   const [alimentos,      setAlimentos]      = useState([]);
-  const [juegoActivo,    setJuegoActivo]    = useState(true);
+  const [juegoActivo,    setJuegoActivo]    = useState(false);
   const [juegoTerminado, setJuegoTerminado] = useState(false);
   const [totalGenerados, setTotalGenerados] = useState(0);
   const [aciertos,       setAciertos]       = useState(0);
@@ -171,23 +170,62 @@ export default function JuegoCanastas({ route, navigation }) {
   const vidasRef     = useRef(3);
   const yaNavego     = useRef(false);
   const manoAnim     = useRef(new Animated.Value(0)).current;
+  const timerRef     = useRef(null);
+  const timeoutRef   = useRef(null);
+  const intervaloRef = useRef(null);
 
+  // ── Animación mano instructiva ──
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(manoAnim, {
-          toValue: -6,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(manoAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
+        Animated.timing(manoAnim, { toValue: -6, duration: 500, useNativeDriver: true }),
+        Animated.timing(manoAnim, { toValue: 0,  duration: 500, useNativeDriver: true }),
       ]),
     ).start();
-  }, [manoAnim]);
+  }, []);
+
+  // ── Voz de inicio y activación del juego ──
+  useEffect(() => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        if (sonidoFondo) {
+          await sonidoFondo.setVolumeAsync(0.08);
+        }
+        await vozInicioCanastas();
+        timeoutRef.current = setTimeout(() => {
+          if (sonidoFondo) {
+            sonidoFondo.setVolumeAsync(0.5);
+          }
+        }, 4000);
+        setJuegoActivo(true);
+      } catch (error) {
+        console.log('Error en voz de inicio:', error);
+        setJuegoActivo(true);
+      }
+    }, 500);
+
+    return () => {
+      detenerSonidosActuales();
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (intervaloRef.current) clearInterval(intervaloRef.current);
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    };
+  }, []);
+
+  // ── Limpiar al salir de la pantalla ──
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      detenerSonidosActuales();
+      if (intervaloRef.current) clearInterval(intervaloRef.current);
+      if (sonidoFondo) {
+        sonidoFondo.setVolumeAsync(0.5);
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const siguienteAlimento = () => {
     if (indiceRef.current >= TOTAL_ALIMENTOS) return null;
@@ -200,12 +238,12 @@ export default function JuegoCanastas({ route, navigation }) {
       id:         `${indiceRef.current}-${Date.now()}`,
       posX:       COLUMNAS_X[col],
       posYAnim:   new Animated.Value(0),
-      velocidad:  0.25 + Math.random() * 0.12,
+      velocidad:  0.12 + Math.random() * 0.06,
       isDragging: false,
     };
   };
 
-  // ── Agregar hasta 2 alimentos en la pantalla  
+  // ── Agregar hasta 2 alimentos ──
   useEffect(() => {
     if (!juegoActivo || juegoTerminado) return;
     if (alimentos.length < NUM_COLUMNAS && totalGenerados < TOTAL_ALIMENTOS) {
@@ -226,13 +264,16 @@ export default function JuegoCanastas({ route, navigation }) {
 
   // ── Loop de caída ──
   useEffect(() => {
-    const intervalo = setInterval(() => {
+    if (intervaloRef.current) clearInterval(intervaloRef.current);
+    
+    intervaloRef.current = setInterval(() => {
       if (!juegoActivo || juegoTerminado) return;
       setAlimentos(prev => {
         const siguientes = prev.map(a => {
           if (a.isDragging) return a;
           const newY = a.posYAnim._value + a.velocidad;
           if (newY > height - 185) {
+            try { vozEscapo(); } catch (e) {}
             fallosRef.current += 1;
             setFallos(fallosRef.current);
             vidasRef.current -= 1;
@@ -245,26 +286,30 @@ export default function JuegoCanastas({ route, navigation }) {
         });
         return siguientes.filter(Boolean);
       });
-    }, 35);
-    return () => clearInterval(intervalo);
+    }, 50);
+    
+    return () => {
+      if (intervaloRef.current) clearInterval(intervaloRef.current);
+    };
   }, [juegoActivo, juegoTerminado]);
 
-  // Terminar juego 
+  // ── Terminar juego ──
   async function terminarJuego() {
     if (terminadoRef.current) return;
     terminadoRef.current = true;
     setJuegoActivo(false);
     setJuegoTerminado(true);
 
-    const ganoPartida = aciertosRef.current >= Math.ceil(TOTAL_ALIMENTOS / 2);
+    const ganoPartida   = aciertosRef.current >= Math.ceil(TOTAL_ALIMENTOS / 2);
     const perdioPartida = vidasRef.current <= 0;
-    
+
     if (ganoPartida) {
       setConfeti(true);
-      reproducirVictoria();
+      try { reproducirVictoria(); } catch (e) {}
       Vibration.vibrate([400, 100, 400]);
     } else {
-      reproducirFallo();
+      try { reproducirFallo(); } catch (e) {}
+      try { vozDerrota(); } catch (e) {}
     }
 
     await sumarEstrellas(aciertosRef.current);
@@ -275,86 +320,67 @@ export default function JuegoCanastas({ route, navigation }) {
     setTimeout(() => {
       if (!yaNavego.current) {
         yaNavego.current = true;
+        detenerSonidosActuales();
         navigation.replace('PantallaResultados', {
           nivelId,
           aciertos: aciertosRef.current,
-          total: TOTAL_ALIMENTOS,
+          total:    TOTAL_ALIMENTOS,
           fallidos: fallosRef.current,
-          perdido: perdioPartida,
+          perdido:  perdioPartida,
         });
       }
     }, 1500);
   }
 
+  // ── Drag ──
   const onDragChange = (id, dragging) => {
     setAlimentos(prev =>
       prev.map(a => a.id === id ? { ...a, isDragging: dragging } : a)
     );
   };
 
+  // ── Drop ──
   const manejarDrop = (id, tipoCanasta) => {
     setAlimentos(prev => {
       const alimento = prev.find(a => a.id === id);
       if (!alimento) return prev;
+
       if (alimento.tipo === tipoCanasta) {
         aciertosRef.current += 1;
         setAciertos(aciertosRef.current);
         setPuntuacion(p => p + PUNTOS_POR_ACIERTO);
-        reproducirAcierto();
+        try { reproducirAcierto(); } catch (e) {}
+        try { vozAcierto(); } catch (e) {}
         Vibration.vibrate(50);
       } else {
         fallosRef.current += 1;
         setFallos(fallosRef.current);
         vidasRef.current -= 1;
         setVidas(vidasRef.current);
-        reproducirFallo();
+        try { reproducirFallo(); } catch (e) {}
+        try { vozFallo(); } catch (e) {}
         Vibration.vibrate(200);
         if (vidasRef.current <= 0 && !terminadoRef.current) terminarJuego();
       }
+
       return prev.filter(a => a.id !== id);
     });
   };
 
-  //FUNCIONES PARA EL RESUMEN
-  const irSiguienteNivel = () => {
-    const sig = nivelId + 1;
-    const niveles = {
-      1: 'JuegoCanastas',
-      2: 'JuegoPlatoSaludable',
-      3: 'JuegoSeleccionar',
-      4: 'JuegoSnacks',
-    };
-    navigation.replace(niveles[sig] || 'Secciones', { nivelId: sig });
-  };
-
-  const volverInicio = () => {
-    navigation.navigate('Secciones');
-  };
-
-  const reintentar = () => {
-    setConfeti(false);
-    setJuegoTerminado(false);
-    setJuegoActivo(true);
-    setAlimentos([]);
-    setTotalGenerados(0);
-    setAciertos(0);
-    setFallos(0);
-    setPuntuacion(0);
-    setVidas(3);
-    aciertosRef.current = 0;
-    fallosRef.current = 0;
-    vidasRef.current = 3;
-    terminadoRef.current = false;
-    indiceRef.current = 0;
-    columnaRef.current = 0;
-    colaRef.current = mezclar(POOL_COMPLETO);
+  const handleVolver = () => {
+    detenerSonidosActuales();
+    if (intervaloRef.current) clearInterval(intervaloRef.current);
+    if (sonidoFondo) {
+      sonidoFondo.setVolumeAsync(0.5);
+    }
+    navigation.navigate("Secciones");
   };
 
   const vidasArr = [0, 1, 2].map(i => i < vidas);
 
   return (
     <LinearGradient
-      colors={["#14c8bf", "#107b7d", "#0d142b"]}
+      colors={['#14c8bf', '#107b7d', '#0d142b']}
       style={s.contenedor}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -363,6 +389,9 @@ export default function JuegoCanastas({ route, navigation }) {
 
       {/* HEADER */}
       <View style={s.header}>
+        <TouchableOpacity onPress={handleVolver} style={s.botonVolverHeader}>
+          <Text style={s.flechaVolver}>←</Text>
+        </TouchableOpacity>
         <View style={s.chip}>
           <Text style={s.chipTxt}>⭐ {puntuacion}/{TOTAL_ALIMENTOS * PUNTOS_POR_ACIERTO}</Text>
         </View>
@@ -388,8 +417,8 @@ export default function JuegoCanastas({ route, navigation }) {
 
       {/* INSTRUCCIÓN */}
       <View style={s.instruccion}>
-        <Animated.View style={[s.instruccionIconBox, { transform: [{ translateY: manoAnim }] }]}> 
-          <Text style={s.instruccionIcon}>👆</Text>
+        <Animated.View style={[s.instruccionIconBox, { transform: [{ translateY: manoAnim }] }]}>
+          <Text style={s.instruccionIcon}>👇</Text>
         </Animated.View>
         <View style={s.instruccionTxtBlock}>
           <Text style={s.instruccionTxtBold}>ARRASTRA</Text>
@@ -430,7 +459,7 @@ export default function JuegoCanastas({ route, navigation }) {
 
         <View style={s.canasta}>
           <LinearGradient
-            colors={['#ef5757', '#dd5454', 'rgb(188, 11, 11)']}
+            colors={['#ef5757', '#dd5454', 'rgb(188,11,11)']}
             style={s.gradCanasta}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -450,10 +479,8 @@ export default function JuegoCanastas({ route, navigation }) {
 }
 
 const s = StyleSheet.create({
-  // Contenedor principal de la pantalla de canastas
   contenedor: { flex: 1 },
 
-  // Encabezado con puntaje y vidas
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -470,6 +497,18 @@ const s = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
   },
+  botonVolverHeader: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 20,
+    padding: 6,
+    paddingHorizontal: 10,
+    marginRight: 4,
+  },
+  flechaVolver: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#1B5E20',
+  },
   chip: {
     backgroundColor: '#ffffff',
     paddingHorizontal: 14,
@@ -481,7 +520,6 @@ const s = StyleSheet.create({
   chipTxt: { fontSize: 13, fontWeight: '700', color: '#1B5E20' },
   filaVidas: { flexDirection: 'row', gap: 2 },
 
-  // Barra de progreso que muestra cuántos alimentos han caído
   barraFondo: {
     height: 8,
     backgroundColor: '#E8F5E9',
@@ -494,7 +532,6 @@ const s = StyleSheet.create({
   },
   barraFill: { height: 8, borderRadius: 6 },
 
-  // Caja de instrucción con icono y texto de arrastrar
   instruccion: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -521,31 +558,16 @@ const s = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  instruccionIcon: {
-    fontSize: 28,
-  },
-  instruccionTxtBlock: {
-    flex: 1,
-  },
-  instruccionTxtBold: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#4E342E',
-  },
-  instruccionTxtSmall: {
-    fontSize: 13,
-    color: '#4E342E',
-    marginTop: 2,
-  },
-  instruccionTxt: { fontSize: 14, fontWeight: '600', color: '#4E342E' },
+  instruccionIcon:     { fontSize: 28 },
+  instruccionTxtBlock: { flex: 1 },
+  instruccionTxtBold:  { fontSize: 16, fontWeight: '900', color: '#4E342E' },
+  instruccionTxtSmall: { fontSize: 13, color: '#4E342E', marginTop: 2 },
 
-  // Zona de caída donde están los alimentos que el niño arrastra
   area: {
     flex: 1,
     position: 'relative',
   },
 
-  // Cada alimento que cae y se puede arrastrar
   item: {
     position: 'absolute',
     alignItems: 'center',
@@ -555,9 +577,8 @@ const s = StyleSheet.create({
     zIndex: 99,
     elevation: 20,
   },
-  // Contenedor de cada tarjeta de alimento dentro de la zona de caída
   itemWrapper: {
-    backgroundColor: 'rgba(222, 240, 243, 0.97)',
+    backgroundColor: 'rgba(222,240,243,0.97)',
     borderRadius: 24,
     paddingVertical: 8,
     paddingHorizontal: 8,
@@ -584,7 +605,6 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
 
-  // Área inferior con las canastas de saludable y chatarra
   canastas: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -601,7 +621,6 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
   },
-  // Contenedor de cada canasta
   canasta: {
     flex: 0.48,
     borderRadius: 24,
