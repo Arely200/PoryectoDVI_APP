@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Come-Saludable",
-    "slug": "Come-Saludable",
+    "name": "Comida Divertida",
+    "slug": "comida-divertida",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
       "**/*"
     ],
     "android": {
-      "package": "com.utp.Come-Saludable",
+      "package": "com.utp.comidadivertida",
       "adaptiveIcon": {
         "backgroundColor": "#4CAF50"
       }
@@ -23,7 +23,7 @@
       }
     },
     "ios": {
-      "bundleIdentifier": "com.utp.Come-Saludable",
+      "bundleIdentifier": "com.utp.comidadivertida",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -31,7 +31,8 @@
     "plugins": [
       "expo-audio",
       "expo-video",
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ]
   }
 }
